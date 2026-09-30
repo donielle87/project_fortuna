@@ -315,6 +315,29 @@ def test_engine_matches_overlap_pmf():
         assert abs(obs[j] - pmf[j]) < 5 * se
 
 
+def test_convergence_v2_accepts_clean_batches():
+    from fortuna.simulation.convergence import check_convergence
+    rng = np.random.default_rng(0)
+    batches = [rng.normal(10, 2, 5000) for _ in range(4)]
+    assert check_convergence(batches).status == "CONVERGED"
+
+
+def test_convergence_v2_rejects_shifted_batch():
+    from fortuna.simulation.convergence import check_convergence
+    rng = np.random.default_rng(0)
+    batches = [rng.normal(10, 2, 5000) for _ in range(3)]
+    batches.append(rng.normal(14, 2, 5000))  # genuinely off-distribution
+    assert check_convergence(batches).status == "NOT CONVERGED"
+
+
+def test_convergence_v2_handles_integer_quantiles():
+    from fortuna.simulation.convergence import check_convergence
+    # integer-valued stat: batch quantiles differing by 1 unit are noise
+    rng = np.random.default_rng(0)
+    batches = [rng.poisson(20, 5000).astype(float) for _ in range(4)]
+    assert check_convergence(batches).status == "CONVERGED"
+
+
 def test_ordered_draw_position_uniform():
     rng = make_rng(7, "F-E001", "test|calib|order")
     od = draw_mains_ordered(rng, PB_S07, 30_000)

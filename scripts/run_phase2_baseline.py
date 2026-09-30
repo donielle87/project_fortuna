@@ -32,7 +32,7 @@ from fortuna.simulation.structural import structural_exact, structural_simulated
 
 ROOT = Path(__file__).resolve().parent.parent
 
-CONFIG_PATH = ROOT / "config/experiments/F-E001.yaml"
+CONFIG_PATH = ROOT / "config/experiments/F-E001.v2.yaml"  # D-003 supersedes v1
 PLAN_PATH = ROOT / "metadata/phase2_observation_plan.csv"
 OUT_DIR = ROOT / "data/reference/null_baselines"
 MANIFEST = "phase2_simulation_manifest.json"
@@ -213,11 +213,20 @@ def main() -> int:
 
     # ---------- manifest ----------
     outputs = sorted(p for p in OUT_DIR.iterdir() if p.name != MANIFEST)
+    # commit that added the frozen preregistration (Commit A)
+    prereg_commit = _git(
+        [
+            "log", "--diff-filter=A", "--format=%H", "--",
+            "research/preregistrations/F-E001-phase2-fair-null-baseline.md",
+        ]
+    ).splitlines()[-1]
     manifest = {
         "phase": 2,
         "experiment_id": exp_id,
-        "phase2_preregistration_commit": _git(["rev-parse", "HEAD"]),
+        "phase2_preregistration_commit": prereg_commit,
         "simulation_code_commit": _git(["rev-parse", "HEAD"]),
+        "config_file": CONFIG_PATH.name,
+        "config_supersedes": "F-E001.yaml (convergence diagnostics, D-003)",
         "accepted_phase1_dataset_sha256": dataset_sha,
         "root_seed": root_seed,
         "rng_algorithm": cfg["rng"]["algorithm"],

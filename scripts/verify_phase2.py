@@ -37,7 +37,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 ROOT = Path(__file__).resolve().parent.parent
 FAILS: list[str] = []
 PREREG = ROOT / "research/preregistrations/F-E001-phase2-fair-null-baseline.md"
-CONFIG = ROOT / "config/experiments/F-E001.yaml"
+CONFIG = ROOT / "config/experiments/F-E001.v2.yaml"   # effective (D-003)
+CONFIG_V1 = ROOT / "config/experiments/F-E001.yaml"   # frozen Commit-A original
 PLAN = ROOT / "metadata/phase2_observation_plan.csv"
 OUT = ROOT / "data/reference/null_baselines"
 FROZEN_SHA = "953c0701aeef6782a361146999ca43c1d4d2863d807c8e4dbe39cfa4108f3891"
@@ -77,7 +78,15 @@ def main() -> int:
     man = json.loads((ROOT / "data/processed/dataset_manifest.json").read_text())
     check(man["dataset_sha256"] == FROZEN_SHA, "frozen Phase 1 dataset hash")
     check(PREREG.exists(), "F-E001 preregistration exists")
-    check(CONFIG.exists(), "F-E001 frozen config exists")
+    check(CONFIG_V1.exists(), "F-E001 frozen (v1) config exists")
+    check(CONFIG.exists(), "F-E001 effective (v2, D-003) config exists")
+    check(
+        (ROOT / "research/preregistrations/"
+         "F-E001-amendment-01-convergence-se.md").exists(),
+        "convergence-SE amendment (D-003) documented",
+    )
+    log_txt = (ROOT / "registry/decision_log.csv").read_text()
+    check("D-003" in log_txt, "decision log records convergence amendment")
     check(PLAN.exists(), "metadata-only observation plan exists")
     if FAILS:
         print(f"PHASE 2 VERIFICATION FAILED ({len(FAILS)} checks)")
@@ -209,6 +218,9 @@ def main() -> int:
     manifest = json.loads((OUT / "phase2_simulation_manifest.json").read_text())
     check(manifest["accepted_phase1_dataset_sha256"] == FROZEN_SHA,
           "manifest pins dataset hash")
+    if prereg_commit:
+        check(manifest["phase2_preregistration_commit"] == prereg_commit[-1],
+              "manifest records true preregistration commit")
     check(manifest["root_seed"] == 20260930, "manifest root seed")
     check(manifest["observation_plan_sha256"] == _sha256(PLAN),
           "manifest observation-plan hash")

@@ -1,11 +1,26 @@
-"""Frozen F-E001 convergence diagnostics.
+"""Frozen F-E001 convergence diagnostics (v2 — decision D-003).
 
 For each (regime, statistic): the four 5,000-replicate batch estimates of
 {mean, variance, q90, q95, q99} are compared against the pooled 20,000-
 replicate estimate.
 
-    CONVERGED iff for every metric m:
-        max_b |m_b - m_pool| <= max(4 * se_pool(m), 1e-6 * max(1, |m_pool|))
+v1 defect (documented, superseded): the frozen text compared batch-pooled
+deviations to ``4 * se_pool``.  Var(m_b - m_pool) = 3 * se_pool^2 for
+n_b = B/4, so the v1 rule is a ~2.3-sigma test on the difference, not a
+4-sigma test, and it cannot represent discrete quantile granularity at
+all.  v2 corrects the SE of the batch-minus-pooled difference and moves
+quantile checks into CDF space (robust to integer-valued statistics).
+
+v2 criterion:
+
+  - mean / variance:
+        |m_b - m_pool| <= max(4 * sqrt(3) * se_pool(m), atol)
+  - quantile q_p (p in {0.90, 0.95, 0.99}):
+        for each batch b, let F_b be its empirical CDF at the pooled
+        quantile value q_pool; pass iff
+            F_b(q_pool)   >= p - T   AND   F_b(q_pool-)  <= p + T
+        with T = 4 * sqrt(3) * sqrt(p(1-p) / B)
+        (the bracket handles atoms/discrete quantiles correctly)
 
 A failed check is reported NOT CONVERGED — never relabeled.
 """
@@ -17,6 +32,7 @@ import numpy as np
 
 METRICS = ("mean", "var", "q90", "q95", "q99")
 _QS = {"q90": 0.90, "q95": 0.95, "q99": 0.99}
+_SQRT3 = math.sqrt(3.0)
 
 
 @dataclass
@@ -54,40 +70,40 @@ def _se_var(pooled: np.ndarray) -> float:
     return math.sqrt(max(mu4 - v * v, 0.0) / pooled.size)
 
 
-def _se_quantile(pooled: np.ndarray, p: float) -> float:
-    """Quantile SE via order-statistic spacing density estimate."""
-    x = np.sort(pooled)
-    b = x.size
-    i = int(round(p * (b - 1)))
-    j = max(1, int(round(b ** 0.6)))
-    lo, hi = max(0, i - j), min(b - 1, i + j)
-    width = x[hi] - x[lo]
-    if width <= 0:
-        return 0.0  # degenerate region: quantile is pinned by mass
-    f_hat = (hi - lo) / (b * width)
-    return math.sqrt(p * (1 - p)) / (f_hat * math.sqrt(b))
-
-
 def check_convergence(
     batches: list[np.ndarray],
     sigma_factor: float = 4.0,
     atol_rel: float = 1e-6,
 ) -> ConvergenceResult:
-    """Apply the frozen criterion to the 4 batch arrays of one statistic."""
+    """Apply the corrected (v2) criterion to the batch arrays of one stat."""
     pooled = np.concatenate(batches)
     res = ConvergenceResult(status="CONVERGED")
     for metric in METRICS:
         m_pool = _metric_value(pooled, metric)
         bvals = [_metric_value(np.asarray(b), metric) for b in batches]
         max_dev = max(abs(v - m_pool) for v in bvals)
+        atol = atol_rel * max(1.0, abs(m_pool))
         if metric == "mean":
             se = _se_mean(pooled)
+            tol = max(sigma_factor * _SQRT3 * se, atol)
+            passed = max_dev <= tol
         elif metric == "var":
             se = _se_var(pooled)
+            tol = max(sigma_factor * _SQRT3 * se, atol)
+            passed = max_dev <= tol
         else:
-            se = _se_quantile(pooled, _QS[metric])
-        atol = atol_rel * max(1.0, abs(m_pool))
-        passed = max_dev <= max(sigma_factor * se, atol)
+            # CDF-space bracket test at the pooled quantile (v2)
+            p = _QS[metric]
+            t = sigma_factor * _SQRT3 * math.sqrt(p * (1 - p) / pooled.size)
+            se = t / sigma_factor  # store the diff-space SE for reporting
+            passed = True
+            for b in batches:
+                b_arr = np.asarray(b)
+                f_le = float((b_arr <= m_pool).mean())
+                f_lt = float((b_arr < m_pool).mean())
+                if f_le < p - t or f_lt > p + t:
+                    passed = False
+            tol = t
         if not passed:
             res.status = "NOT CONVERGED"
         res.metrics.append(

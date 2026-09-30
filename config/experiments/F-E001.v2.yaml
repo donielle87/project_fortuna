@@ -1,0 +1,58 @@
+# F-E001 v2 — supersedes the convergence block of F-E001.yaml (D-003).
+# Everything else is IDENTICAL to the frozen Commit-A configuration.
+# Change recorded in registry/decision_log.csv and
+# research/preregistrations/F-E001-amendment-01-convergence-se.md.
+# Scientific impact: NONE on generated draws or statistic values — the
+# correction only fixes the batch-vs-pooled convergence SE formula and
+# moves quantile checks into CDF space.
+experiment_id: F-E001
+phase: 2
+title: Fair-random null model and Monte Carlo baseline
+supersedes: F-E001.yaml (convergence diagnostics only)
+amendment: research/preregistrations/F-E001-amendment-01-convergence-se.md
+
+accepted_phase1_dataset_sha256: >-
+  953c0701aeef6782a361146999ca43c1d4d2863d807c8e4dbe39cfa4108f3891
+
+rng:
+  algorithm: PCG64DXSM          # numpy.random.Generator(PCG64DXSM)
+  root_seed: 20260930
+  child_derivation: sha256-scope-v1
+  # scope-string = "game|statistical_regime|<stream>|batch<b>"; history
+  # generation uses stream=HISTORIES shared across statistics (identical
+  # in distribution, avoids 13x redundant draws); VALIDATION and
+  # STRUCTURAL are dedicated streams.
+
+monte_carlo:
+  replicates_per_statistic_regime: 20000
+  batches: 4
+  replicates_per_batch: 5000
+  streaming: true               # statistics accumulated; raw draws not kept
+
+# Convergence (v2, D-003): for each regime x statistic compare the 4 batch
+# estimates of {mean, variance, q90, q95, q99} against the pooled 20k
+# estimate.  The SE of (batch - pooled) is sqrt(3) * se_pool for n_b=B/4.
+#   mean/var:  |m_b - m_pool| <= max(4*sqrt(3)*se_pool, atol)
+#   quantiles: CDF-space bracket at pooled quantile:
+#              F_b(q_pool) >= p - T  AND  F_b(q_pool-) <= p + T
+#              with T = 4*sqrt(3)*sqrt(p(1-p)/B)
+# Failure -> NOT CONVERGED (never relabeled).
+convergence:
+  version: 2
+  sigma_factor: 4.0
+  atol_rel: 0.000001
+
+validation:
+  draws_per_regime: 200000
+  sigma_factor: 5.0
+
+eligibility:
+  draw_stream: main
+  analysis_eligible: true
+
+sequential_breaks: exclude_positions
+statistics_catalog_version: "1.0"
+
+histogram_bins:
+  integer_stats: exact
+  continuous_stats: adaptive
