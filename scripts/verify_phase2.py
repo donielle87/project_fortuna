@@ -37,12 +37,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 ROOT = Path(__file__).resolve().parent.parent
 FAILS: list[str] = []
 PREREG = ROOT / "research/preregistrations/F-E001-phase2-fair-null-baseline.md"
-CONFIG = ROOT / "config/experiments/F-E001.v3.yaml"   # effective (D-003+D-004)
+CONFIG = ROOT / "config/experiments/F-E001.v4.yaml"   # effective (D-007/D-008)
+CONFIG_V3 = ROOT / "config/experiments/F-E001.v3.yaml"
 CONFIG_V2 = ROOT / "config/experiments/F-E001.v2.yaml"
 CONFIG_V1 = ROOT / "config/experiments/F-E001.yaml"   # frozen Commit-A original
 PLAN = ROOT / "metadata/phase2_observation_plan.csv"
 OUT = ROOT / "data/reference/null_baselines"
-FROZEN_SHA = "953c0701aeef6782a361146999ca43c1d4d2863d807c8e4dbe39cfa4108f3891"
+# Accepted pre-correction dataset hash (F-E001 v1-v3 era); superseded by
+# the D-007/D-008 corrected dataset the v4 config now pins.
+FROZEN_SHA_V1 = "953c0701aeef6782a361146999ca43c1d4d2863d807c8e4dbe39cfa4108f3891"
+# Commit holding the last v3-era baseline outputs (diff-audit baseline).
+V3_BASELINE_COMMIT = "7463bdb3805dd68aab30a9feddcf992600678783"
 
 
 def check(cond: bool, label: str) -> None:
@@ -77,11 +82,24 @@ def main() -> int:
 
     # ---- frozen inputs ----
     man = json.loads((ROOT / "data/processed/dataset_manifest.json").read_text())
-    check(man["dataset_sha256"] == FROZEN_SHA, "frozen Phase 1 dataset hash")
+    cfg_pre = yaml.safe_load(CONFIG.read_text())
+    accepted_sha = cfg_pre["accepted_phase1_dataset_sha256"].strip()
+    check(accepted_sha != FROZEN_SHA_V1,
+          "v4 config pins the corrected Phase 1 dataset hash")
+    check(man["dataset_sha256"] == accepted_sha,
+          "manifest dataset hash matches v4-pinned corrected hash")
+    check(man.get("build_code_commit") is not None,
+          "manifest records build code commit")
     check(PREREG.exists(), "F-E001 preregistration exists")
     check(CONFIG_V1.exists(), "F-E001 frozen (v1) config exists")
     check(CONFIG_V2.exists(), "F-E001 v2 config exists (D-003)")
-    check(CONFIG.exists(), "F-E001 effective (v3, D-004) config exists")
+    check(CONFIG_V3.exists(), "F-E001 v3 config exists (D-004)")
+    check(CONFIG.exists(), "F-E001 effective (v4, D-007/D-008) config exists")
+    check(
+        (ROOT / "research/preregistrations/"
+         "F-E001-amendment-03-phase1-correction.md").exists(),
+        "Phase-1-correction amendment (D-007/D-008) exists",
+    )
     check(
         (ROOT / "research/preregistrations/"
          "F-E001-amendment-01-convergence-se.md").exists(),
@@ -96,6 +114,8 @@ def main() -> int:
     check("D-003" in log_txt, "decision log records convergence amendment")
     check("D-004" in log_txt, "decision log records shared-history governance")
     check("D-005" in log_txt, "decision log records F-S007/F-S008 correction")
+    check("D-007" in log_txt, "decision log records order-provenance repair")
+    check("D-008" in log_txt, "decision log records exclusion adjudication")
     check(PLAN.exists(), "metadata-only observation plan exists")
     if FAILS:
         print(f"PHASE 2 VERIFICATION FAILED ({len(FAILS)} checks)")
@@ -109,8 +129,14 @@ def main() -> int:
         int(cfg["monte_carlo"]["replicates_per_statistic_regime"]) == 20000,
         "20,000 replicates frozen",
     )
-    check(cfg["accepted_phase1_dataset_sha256"].strip() == FROZEN_SHA,
-          "v3 config pins frozen dataset hash")
+    check(cfg["accepted_phase1_dataset_sha256"].strip() == accepted_sha,
+          "v4 config pins corrected dataset hash")
+    from fortuna.simulation.observation import observation_plan_hash
+
+    # the plan hash covers the builder's row dicts (superset of the CSV
+    # columns); it is evaluated on a fresh metadata rebuild below.
+    check(_sha256(CONFIG_V3) != _sha256(CONFIG),
+          "v4 config is a distinct versioned file")
     check("HISTORIES" in CONFIG.read_text(),
           "effective config documents shared-history stream scope")
     check("statistic_id" in CONFIG_V1.read_text(),
@@ -155,14 +181,19 @@ def main() -> int:
     plan_rows = _read_csv(PLAN)
     check({r["statistical_regime_id"] for r in plan_rows} == set(mats),
           "plan covers all 16 statistical regimes")
-    check(all(r["dataset_sha256"] == FROZEN_SHA for r in plan_rows),
-          "plan pins frozen dataset hash")
+    check(all(r["dataset_sha256"] == accepted_sha for r in plan_rows),
+          "plan pins corrected dataset hash")
 
     # ---- plan matches a fresh metadata-only rebuild ----
     from fortuna.simulation.observation import build_observation_plan
 
     rebuilt = build_observation_plan(
-        ROOT / "data/processed/draws.csv", regimes, FROZEN_SHA
+        ROOT / "data/processed/draws.csv", regimes, accepted_sha
+    )
+    check(
+        observation_plan_hash(rebuilt)
+        == cfg.get("observation_plan_sha256", "").strip(),
+        "v4 config pins observation plan hash (rebuilt)",
     )
     rebuilt_map = {r["statistical_regime_id"]: r for r in rebuilt}
     ok = True
@@ -239,13 +270,14 @@ def main() -> int:
         print(f"PHASE 2 VERIFICATION FAILED ({len(FAILS)} checks)")
         return 1
     manifest = json.loads((OUT / "phase2_simulation_manifest.json").read_text())
-    check(manifest["accepted_phase1_dataset_sha256"] == FROZEN_SHA,
-          "manifest pins dataset hash")
+    check(manifest["accepted_phase1_dataset_sha256"] == accepted_sha,
+          "manifest pins corrected dataset hash")
     if prereg_commit:
         check(manifest["phase2_preregistration_commit"] == prereg_commit[-1],
               "manifest records true preregistration commit")
     check(manifest["root_seed"] == 20260930, "manifest root seed")
-    check(manifest["observation_plan_sha256"] == _sha256(PLAN),
+    check(manifest["observation_plan_sha256"]
+          == observation_plan_hash(rebuilt),
           "manifest observation-plan hash")
     check(manifest["config_sha256"] == _sha256(CONFIG), "manifest config hash")
     check(manifest["preregistration_sha256"] == _sha256(PREREG),
@@ -366,37 +398,59 @@ def main() -> int:
         "manifest code commit contains corrected F-S007/F-S008 code",
     )
 
-    # ---- pre-correction baseline diff: only F-S007/F-S008 may change ----
+    # ---- v4 refresh audit (D-007/D-008) ----------------------------------
+    # Baselines may change ONLY in regimes whose corrected observation-plan
+    # row changed (eligible count or segment structure). Regimes with an
+    # unchanged plan must reproduce the v3-era baseline byte-for-byte: the
+    # per-regime HISTORIES streams are dataset-independent.
     numeric_cols = ("mean", "var", "std", "se_mean", "min", "max")
     old_summary = _git(
         "show",
-        "f7ccf64dc5f8a8421bd32efb3cd3192f5c1f0bfe:"
+        f"{V3_BASELINE_COMMIT}:"
         "data/reference/null_baselines/history_baseline_summary.csv",
     )
-    if old_summary:
+    old_plan = _git(
+        "show", f"{V3_BASELINE_COMMIT}:metadata/phase2_observation_plan.csv"
+    )
+    if old_summary and old_plan:
+        old_plan_map = {
+            r["statistical_regime_id"]: r
+            for r in csv.DictReader(old_plan.splitlines())
+        }
+        changed_regimes = {
+            r["statistical_regime_id"]
+            for r in plan_rows
+            if (
+                r["eligible_main_draw_count"]
+                != old_plan_map[r["statistical_regime_id"]][
+                    "eligible_main_draw_count"]
+                or r["contiguous_sequence_segment_lengths"]
+                != old_plan_map[r["statistical_regime_id"]][
+                    "contiguous_sequence_segment_lengths"]
+            )
+        }
+        check(bool(changed_regimes),
+              "exclusions changed at least one regime's plan")
         old_map = {
             (r["statistical_regime_id"], r["statistic_id"]): r
             for r in csv.DictReader(old_summary.splitlines())
         }
-        new_map = {
-            (r["statistical_regime_id"], r["statistic_id"]): r
-            for r in summ
-        }
-        unexpected, run_changed = [], []
-        for key, new_r in new_map.items():
+        unexpected, expected = [], []
+        for r in summ:
+            key = (r["statistical_regime_id"], r["statistic_id"])
             old_r = old_map.get(key)
             if old_r is None:
                 continue
-            diff = any(old_r[c] != new_r[c] for c in numeric_cols)
-            if diff and key[1] in ("F-S007", "F-S008"):
-                run_changed.append(key)
-            elif diff:
-                unexpected.append(key)
+            if any(old_r[c] != r[c] for c in numeric_cols):
+                (expected if key[0] in changed_regimes
+                 else unexpected).append(key)
         check(not unexpected,
-              f"only F-S007/F-S008 baselines changed {unexpected[:5]}")
-        check(bool(run_changed), "F-S007/F-S008 baselines did change")
+              f"baselines changed only in plan-changed regimes "
+              f"{unexpected[:5]}")
+        check(bool(expected),
+              "plan-changed regimes produced refreshed baselines")
     else:
-        check(False, "pre-correction baseline retrievable for diff audit")
+        check(False, "v3-era baseline/plan retrievable for diff audit")
 
     # ---- multiplicity utilities ----
     from fortuna.statistics.multiple_testing import benjamini_hochberg, holm

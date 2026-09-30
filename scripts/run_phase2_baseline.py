@@ -26,13 +26,14 @@ from fortuna.schemas.csv_io import load_csv
 from fortuna.schemas.regimes import GameRegime
 from fortuna.simulation import convergence, exact, montecarlo, validation
 from fortuna.simulation.matrix import statistical_matrices
+from fortuna.simulation.observation import observation_plan_hash
 from fortuna.simulation.seeding import make_rng
 from fortuna.simulation.statistics import CATALOG, applicable_statistics
 from fortuna.simulation.structural import structural_exact, structural_simulated
 
 ROOT = Path(__file__).resolve().parent.parent
 
-CONFIG_PATH = ROOT / "config/experiments/F-E001.v3.yaml"  # effective: D-003+D-004
+CONFIG_PATH = ROOT / "config/experiments/F-E001.v4.yaml"  # effective: D-003..D-008
 PLAN_PATH = ROOT / "metadata/phase2_observation_plan.csv"
 OUT_DIR = ROOT / "data/reference/null_baselines"
 MANIFEST = "phase2_simulation_manifest.json"
@@ -76,6 +77,24 @@ def main() -> int:
     with PLAN_PATH.open(newline="") as f:
         plan_rows = {r["statistical_regime_id"]: r for r in csv.DictReader(f)}
 
+    if cfg.get("observation_plan_sha256"):
+        from fortuna.simulation.observation import build_observation_plan
+        rebuilt_plan = build_observation_plan(
+            ROOT / "data/processed/draws.csv", regimes, dataset_sha
+        )
+        assert (
+            observation_plan_hash(rebuilt_plan)
+            == cfg["observation_plan_sha256"].strip()
+        ), "observation plan hash mismatch — frozen input violated"
+        rb = {r["statistical_regime_id"]: r for r in rebuilt_plan}
+        assert all(
+            int(r["eligible_main_draw_count"])
+            == rb[r["statistical_regime_id"]]["eligible_main_draw_count"]
+            and r["contiguous_sequence_segment_lengths"]
+            == rb[r["statistical_regime_id"]][
+                "contiguous_sequence_segment_lengths"]
+            for r in plan_rows.values()
+        ), "observation plan file diverges from metadata rebuild"
     assert set(plan_rows) == set(matrices), "plan/regime mismatch"
     assert len(matrices) == 16, "expected 16 statistical pool groups"
 
@@ -226,12 +245,13 @@ def main() -> int:
         "phase2_preregistration_commit": prereg_commit,
         "simulation_code_commit": _git(["rev-parse", "HEAD"]),
         "config_file": CONFIG_PATH.name,
-        "config_supersedes": "F-E001.v2.yaml (rng scope documentation, D-004)",
+        "config_supersedes": "F-E001.v3.yaml (input refresh, D-007/D-008)",
         "amendments": [
             "F-E001-amendment-01-convergence-se.md (D-003)",
             "F-E001-amendment-02-shared-history-stream.md (D-004)",
+            "F-E001-amendment-03-phase1-correction.md (D-007/D-008)",
         ],
-        "decisions": ["D-003", "D-004", "D-005"],
+        "decisions": ["D-003", "D-004", "D-005", "D-007", "D-008"],
         "accepted_phase1_dataset_sha256": dataset_sha,
         "root_seed": root_seed,
         "rng_algorithm": cfg["rng"]["algorithm"],
@@ -242,7 +262,8 @@ def main() -> int:
         "replicates_per_batch": reps,
         "statistics_catalog_version": cfg["statistics_catalog_version"],
         "statistical_regimes": sorted(matrices),
-        "observation_plan_sha256": _sha256(PLAN_PATH),
+        "observation_plan_sha256": observation_plan_hash(rebuilt_plan)
+        if cfg.get("observation_plan_sha256") else _sha256(PLAN_PATH),
         "determinism_probe_sha256": probes,
         "config_sha256": _sha256(CONFIG_PATH),
         "preregistration_sha256": _sha256(

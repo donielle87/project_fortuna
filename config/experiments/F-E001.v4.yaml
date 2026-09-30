@@ -1,0 +1,77 @@
+# F-E001 v4 — Phase 2 null refresh driven solely by the upstream
+# Phase 1 data-integrity correction (D-007 atomic order/sequence
+# provenance, D-008 evidence-based draw exclusions). Supersedes
+# F-E001.v3.yaml as the EFFECTIVE configuration.
+#
+# UNCHANGED (frozen design): fair-random assumptions, PCG64DXSM,
+# root seed 20260930, F-S001..F-S013 statistic definitions and catalog
+# version, v2 convergence diagnostic, shared HISTORIES stream scope,
+# 20,000 replicate / 4x5,000 batch design, validation rules.
+#
+# CHANGED: only the scientific inputs — corrected Phase 1 dataset hash
+# and the corrected metadata observation plan (eligible counts and
+# contiguous/order-eligible segment structure). F-E001.yaml, v2, v3,
+# the original preregistration, and Amendments 01-02 remain preserved
+# and unedited.
+experiment_id: F-E001
+phase: 2
+title: Fair-random null model and Monte Carlo baseline (Phase-1-corrected)
+supersedes: F-E001.v3.yaml (input refresh only, D-007/D-008)
+amendments:
+  - research/preregistrations/F-E001-amendment-01-convergence-se.md
+  - research/preregistrations/F-E001-amendment-02-shared-history-stream.md
+  - research/preregistrations/F-E001-amendment-03-phase1-correction.md
+decisions: [D-003, D-004, D-005, D-007, D-008]
+
+accepted_phase1_dataset_sha256: >-
+  200174427b4abcc6bcc0aa3761174db237ae52e266e88cfc88bae39f27c138ff
+observation_plan_sha256: >-
+  8309e1dd673e339b66b1fae09d02a0f2b205a62ada2882c1590645d1bf2ac10a
+
+rng:
+  algorithm: PCG64DXSM          # numpy.random.Generator(PCG64DXSM)
+  root_seed: 20260930
+  child_derivation: sha256-scope-v1
+  # IMPLEMENTED shared-history scope (D-004): one fair-history stream per
+  #   "<game>|<statistical_regime>|HISTORIES|batch<1..4>"
+  # All applicable catalog statistics are computed from the same replicate
+  # histories, preserving joint null dependence; each statistic still
+  # receives 20,000 iid replicates. Dedicated streams: VALIDATION,
+  # STRUCTURAL. Independent of execution order and platform.
+
+monte_carlo:
+  replicates_per_statistic_regime: 20000
+  batches: 4
+  replicates_per_batch: 5000
+  streaming: true               # statistics accumulated; raw draws not kept
+
+# Convergence (v2, D-003 — unchanged): batch vs pooled on
+# {mean, variance, q90, q95, q99}:
+#   mean/var:  |m_b - m_pool| <= max(4*sqrt(3)*se_pool, atol)
+#   quantiles: CDF-space bracket F_b(q_pool) >= p-T, F_b(q_pool-) <= p+T
+#              with T = 4*sqrt(3)*sqrt(p(1-p)/B)
+# Failure -> NOT CONVERGED (never relabeled).
+convergence:
+  version: 2
+  sigma_factor: 4.0
+  atol_rel: 0.000001
+
+# Sequential run statistics (D-005): runs are evaluated per segment
+# without mutating observations; runs beginning at a segment start count
+# their full length; runs never bridge segments.
+statistics_correction: D-005
+
+validation:
+  draws_per_regime: 200000
+  sigma_factor: 5.0
+
+eligibility:
+  draw_stream: main
+  analysis_eligible: true
+
+sequential_breaks: exclude_positions
+statistics_catalog_version: "1.0"
+
+histogram_bins:
+  integer_stats: exact
+  continuous_stats: adaptive
