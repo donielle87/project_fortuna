@@ -50,6 +50,20 @@ def test_every_game_has_verified_regime():
         assert any(r.verification_status.value == "verified" for r in rows), g
 
 
+def test_unverified_material_boundaries_are_quarantined():
+    """A baseline/matrix/mechanism regime that is not verified MUST carry a
+    quarantine window so uncertain draws cannot be silently assigned."""
+    regimes = load_regimes(META / "game_regimes.csv")
+    material = {"baseline", "matrix", "mechanism"}
+    for r in regimes:
+        if (r.change_classification.value in material
+                and r.verification_status.value != "verified"):
+            assert r.first_unambiguous_draw is not None, (
+                f"{r.regime_id}: unverified {r.change_classification.value} "
+                "boundary treated as definitive")
+            assert r.first_unambiguous_draw > r.first_affected_draw
+
+
 def test_regime_sources_registered():
     regimes = load_regimes(META / "game_regimes.csv")
     src_ids = {s.source_id for s in load_csv(META / "source_registry.csv", Source)}

@@ -125,4 +125,20 @@ def check_regime_integrity(regimes: list[GameRegime]) -> list[str]:
         if undated:
             warnings.append(f"{game_id}: regimes with no usable dates: {undated}")
 
+    # Quarantine-window consistency.
+    for r in regimes:
+        if r.first_unambiguous_draw is None:
+            continue
+        if r.verification_status.value == "verified":
+            warnings.append(
+                f"{r.regime_id}: verified regime carries a quarantine window — "
+                "either the boundary is proven (drop first_unambiguous_draw) or "
+                "it is not (downgrade verification_status)"
+            )
+        if r.last_affected_draw and r.first_unambiguous_draw > r.last_affected_draw:
+            warnings.append(
+                f"{r.regime_id}: quarantine window extends past span end — "
+                "the entire regime span is unproven"
+            )
+
     return warnings

@@ -7,7 +7,11 @@ from datetime import date
 
 import pytest
 
-from fortuna.rules.assign import IncompatibleMatrixError, assert_poolable, assign_regime
+from fortuna.rules.assign import (
+    IncompatibleMatrixError,
+    assert_poolable,
+    assign_regime,
+)
 from fortuna.schemas.draws import Draw
 from fortuna.validation.draw_validator import validate_draw
 
@@ -113,6 +117,38 @@ def test_mm_cross_matrix_pooling_rejected(regimes):
                [1, 2, 3, 4, 5], 10, "MM-D-2025-04-08")
     with pytest.raises(IncompatibleMatrixError):
         assert_poolable([d1, d2], regimes)
+
+
+# ---- 1999 Big Game 5/50+1/25 -> 5/50+1/36 boundary (resolved) ----
+
+def test_biggame_1999_boundary_resolved(regimes):
+    """MI Lottery PR (SRC-MM-MI-PR1999) pins the change to wagers placed for
+    the 1999-01-15 drawing: last old-matrix draw Tue 01-12, first new-matrix
+    draw Fri 01-15."""
+    assert assign_regime("mega_millions", date(1999, 1, 12),
+                         regimes).regime_id == "MM-R002"
+    assert assign_regime("mega_millions", date(1999, 1, 15),
+                         regimes).regime_id == "MM-R003"
+    by = _by_id(regimes)
+    assert by["MM-R002"].statistical_regime_id == "MM-S01"
+    assert by["MM-R003"].statistical_regime_id == "MM-S02"
+    assert by["MM-R003"].verification_status.value == "verified"
+
+
+def test_biggame_1999_no_quarantine_window_needed(regimes):
+    """A resolved boundary must not carry a quarantine window."""
+    by = _by_id(regimes)
+    assert by["MM-R003"].first_unambiguous_draw is None
+
+
+def test_biggame_bonus_26_impossible_before_1999(regimes):
+    """Big Money Ball 26 could not exist under the 1/25 pool."""
+    d = _draw("mega_millions", "MM-R003", date(1999, 1, 26),
+              [5, 8, 10, 44, 50], 33)
+    assert validate_draw(d, _by_id(regimes)["MM-R003"]) == []
+    d_old = _draw("mega_millions", "MM-R002", date(1999, 1, 12),
+                  [5, 7, 9, 20, 46], 33)
+    assert validate_draw(d_old, _by_id(regimes)["MM-R002"])
 
 
 # ---------- Florida Lotto ----------

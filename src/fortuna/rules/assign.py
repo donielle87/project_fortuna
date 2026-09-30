@@ -20,6 +20,15 @@ class AmbiguousRegimeError(ValueError):
     """More than one regime covers the requested (game, draw_date)."""
 
 
+class UnverifiedBoundaryError(ValueError):
+    """The draw date falls inside an unresolved material-boundary window.
+
+    The regime's statistical identity on that date cannot be proven from
+    authoritative evidence, so the draw must be quarantined — never assigned
+    or pooled — until the boundary is resolved.
+    """
+
+
 class IncompatibleMatrixError(ValueError):
     """Draws from different statistical regimes were pooled illegally."""
 
@@ -49,7 +58,17 @@ def assign_regime(
         raise AmbiguousRegimeError(
             f"{game_id} on {draw_date} matches multiple regimes: {ids}"
         )
-    return matches[0]
+    regime = matches[0]
+    if (
+        regime.first_unambiguous_draw is not None
+        and draw_date < regime.first_unambiguous_draw
+    ):
+        raise UnverifiedBoundaryError(
+            f"{game_id} on {draw_date}: regime {regime.regime_id} boundary is "
+            f"unresolved — draws before {regime.first_unambiguous_draw} are "
+            "quarantined from statistical assignment"
+        )
+    return regime
 
 
 def statistical_groups(
@@ -60,8 +79,17 @@ def statistical_groups(
     groups: dict[str, list[Draw]] = {}
     for d in draws:
         if d.regime_id not in by_regime:
-            raise NoRegimeError(f"draw {d.draw_id} has unknown regime_id {d.regime_id!r}")
-        gid = by_regime[d.regime_id].statistical_regime_id
+            raise NoRegimeError(f"draw {d.regime_id} has unknown regime_id {d.regime_id!r}")
+        regime = by_regime[d.regime_id]
+        if (
+            regime.first_unambiguous_draw is not None
+            and d.draw_date < regime.first_unambiguous_draw
+        ):
+            raise UnverifiedBoundaryError(
+                f"draw {d.draw_id} ({d.draw_date}) falls inside the unresolved "
+                f"boundary window of {regime.regime_id} — quarantined"
+            )
+        gid = regime.statistical_regime_id
         groups.setdefault(gid, []).append(d)
     return groups
 

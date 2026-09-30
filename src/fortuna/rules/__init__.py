@@ -4,6 +4,7 @@ from fortuna.rules.assign import (
     AmbiguousRegimeError,
     IncompatibleMatrixError,
     NoRegimeError,
+    UnverifiedBoundaryError,
     assert_poolable,
     assign_regime,
 )
@@ -19,6 +20,7 @@ __all__ = [
     "IncompatibleMatrixError",
     "NoRegimeError",
     "RegimeIntegrityError",
+    "UnverifiedBoundaryError",
     "assign_regime",
     "assert_poolable",
     "check_regime_integrity",

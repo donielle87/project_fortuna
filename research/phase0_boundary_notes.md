@@ -49,10 +49,22 @@ evidence trail and known ambiguities.
 - MUSL M2G2 amendment history gives exact effective draw dates for
   2013/2017/2025. NY Open Data corroborates (e.g., MB=25 drawn 2025-04-04,
   the literal last ball of the old pool).
-- **Partially verified**: exact first Tuesday draw (~1998-02-03 candidate)
-  and exact first draw under 5/50+1/36 (1999-01-12 vs 1999-01-15). MI Lottery
-  PR (1999-01-12) fixes the change to that week; a digitized MUSL/Big Game
-  rule text would close it. Bounded impact: ≤1 draw's assignment.
+- **RESOLVED (corrective pass 2026-09-30)**: the 5/50+1/36 boundary is pinned
+  by the official MI Lottery PR (`SRC-MM-MI-PR1999`): "Starting with wagers
+  placed for the **January 15, 1999** Big Game drawing, players will choose
+  between cash option or ... annuity" — the matrix change to 5/50+1/36 is
+  announced in the same release for the same drawing. First new-matrix draw:
+  Fri **1999-01-15**; last old-matrix draw: Tue **1999-01-12**; the "01-13"
+  date in secondary sources is the Wednesday sales start (not a draw day).
+  Corroborated by the secondary draw archive: all pre-01-15 bonus balls ≤ 25;
+  the first > 25 bonus appears 01-26/99 (bonus 33). MM-R003 → verified.
+- **Still partially verified (schedule-only, pool-neutral)**: the exact first
+  Tuesday draw (~Feb 1998). Both sides of that boundary are pool MM-S01, so
+  the uncertainty cannot contaminate statistical pooling.
+- **Quarantine machinery added**: `GameRegime.first_unambiguous_draw` +
+  `UnverifiedBoundaryError`. Any future unverified material boundary
+  (baseline/matrix/mechanism) must carry a quarantine window; draws inside it
+  cannot be assigned or pooled, and `verify_phase0.py` fails otherwise.
 
 ## Draw-data coverage gaps (documented as DrawSource gap rows)
 

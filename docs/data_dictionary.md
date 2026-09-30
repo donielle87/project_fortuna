@@ -26,6 +26,7 @@ sampling fields below; identical keys = same statistical pool group.
 | legal_effective_start/end | date | rule's legal window (may differ from draw span) |
 | first_affected_draw | date | first drawing conducted under this era — used for assignment |
 | last_affected_draw | date | last drawing under this era; empty = ongoing |
+| first_unambiguous_draw | date | optional quarantine bound: if set, draws in `[first_affected_draw, first_unambiguous_draw)` raise `UnverifiedBoundaryError` — only legal on unverified material boundaries |
 | main_ball_count/min/max | int | main-pool sampling spec |
 | special_ball_count/min/max | int | bonus-pool spec; 0 = no bonus ball |
 | sampling_without_replacement | bool | always true for these games |

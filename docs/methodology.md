@@ -31,7 +31,26 @@ statistically pooled; different keys are forbidden from pooling.
   draw boundaries.
 - If a boundary cannot be proven from authoritative evidence, the regime is
   marked `partially_verified` or `unresolved` — false precision is worse than
-  an honest gap (see `MM-R002`/`MM-R003`).
+  an honest gap (see `MM-R002`).
+
+## Boundary-uncertainty quarantine
+
+A **material** boundary (baseline/matrix/mechanism) that is not `verified`
+cannot be allowed to silently misassign draws. Such a regime carries
+`first_unambiguous_draw`: the earliest draw date provably governed by it.
+`first_affected_draw` then records the earliest *candidate*. Draws in
+`[first_affected_draw, first_unambiguous_draw)` are quarantined:
+
+- `assign_regime` raises `UnverifiedBoundaryError`
+- `statistical_groups` / `assert_poolable` raise `UnverifiedBoundaryError` —
+  a quarantined draw can never enter a pool
+- `validate_draws` records the quarantine as a rejection reason
+- `verify_phase0.py` FAILs if any unverified material boundary lacks a
+  quarantine window, and probes each window at runtime
+
+Non-material partials (schedule/economic/administrative) are exempt: their
+pool group is unchanged, so the uncertainty cannot contaminate statistical
+pooling (e.g. `MM-R002`'s exact first-Tuesday date).
 
 ## Reporting-convention vs. process changes
 

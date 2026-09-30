@@ -38,6 +38,15 @@ class GameRegime(BaseModel):
     first_affected_draw: date | None = None
     last_affected_draw: date | None = None
 
+    # Boundary-uncertainty quarantine. When the exact draw on which a MATERIAL
+    # change took effect is not provable, first_affected_draw records the
+    # earliest candidate draw and first_unambiguous_draw records the first
+    # draw provably governed by this regime. Draws in
+    # [first_affected_draw, first_unambiguous_draw) are quarantined:
+    # assign_regime raises UnverifiedBoundaryError and they can never enter a
+    # statistical pool. Must be None when the boundary is fully verified.
+    first_unambiguous_draw: date | None = None
+
     # Sampling-process fields — these define statistical comparability.
     main_ball_count: int = Field(gt=0)
     main_ball_min: int
@@ -109,6 +118,14 @@ class GameRegime(BaseModel):
         lo, hi = self.first_affected_draw, self.last_affected_draw
         if lo and hi and lo > hi:
             raise ValueError("first_affected_draw must be <= last_affected_draw")
+        if self.first_unambiguous_draw is not None:
+            if self.first_affected_draw is None:
+                raise ValueError(
+                    "first_unambiguous_draw requires first_affected_draw")
+            if self.first_unambiguous_draw <= self.first_affected_draw:
+                raise ValueError(
+                    "first_unambiguous_draw must be > first_affected_draw "
+                    "(equal means no ambiguity — leave it empty)")
         return self
 
     @property

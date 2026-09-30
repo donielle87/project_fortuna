@@ -95,6 +95,45 @@ def main() -> int:
             print(f"  WARN unresolved regimes: {unresolved}")
         if partial:
             print(f"  INFO partially_verified regimes: {partial}")
+        # Material-boundary quarantine enforcement:
+        # a baseline/matrix/mechanism regime that is not 'verified' MUST carry
+        # a quarantine window (first_unambiguous_draw > first_affected_draw)
+        # so no uncertain draw can be auto-assigned or pooled. Schedule/
+        # economic/administrative partials are pool-neutral and exempt.
+        material = {"baseline", "matrix", "mechanism"}
+        for r in regimes:
+            if (r.change_classification.value in material
+                    and r.verification_status.value != "verified"):
+                if r.first_unambiguous_draw is None:
+                    failures.append(
+                        f"{r.regime_id}: {r.change_classification.value} boundary is "
+                        f"{r.verification_status.value} but has no quarantine window "
+                        "(first_unambiguous_draw) — treated as definitive")
+                else:
+                    print(f"  INFO {r.regime_id}: unresolved material boundary — "
+                          f"quarantine {r.first_affected_draw}.."
+                          f"{r.first_unambiguous_draw}")
+        # Runtime probe: quarantined windows must actually raise on assignment
+        from fortuna.rules.assign import UnverifiedBoundaryError, assign_regime
+        for r in regimes:
+            if r.first_unambiguous_draw is not None:
+                try:
+                    assign_regime(r.game_id, r.first_affected_draw, regimes)
+                    failures.append(
+                        f"{r.regime_id}: assign_regime succeeded inside the "
+                        "quarantine window — boundary can silently assign")
+                except UnverifiedBoundaryError:
+                    print(f"  OK   {r.regime_id}: quarantined draw raises "
+                          "UnverifiedBoundaryError")
+                except Exception as exc:  # noqa: BLE001
+                    failures.append(
+                        f"{r.regime_id}: quarantine window raised wrong error: {exc}")
+                try:
+                    assign_regime(r.game_id, r.first_unambiguous_draw, regimes)
+                except Exception as exc:  # noqa: BLE001
+                    failures.append(
+                        f"{r.regime_id}: first unambiguous draw "
+                        f"{r.first_unambiguous_draw} fails assignment: {exc}")
         # every game must have >=1 regime and >=1 verified regime
         for g in {r.game_id for r in regimes}:
             rows = [r for r in regimes if r.game_id == g]

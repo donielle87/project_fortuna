@@ -11,12 +11,23 @@ game history. Principle: RULES ARE DATA.
 Phase 0 reconstructed the complete rule history of all three games into a
 two-level model — 22 legal regimes (`regime_id`) grouped into 16 statistical
 pool groups (`statistical_regime_id`) — every row sourced, dated, and
-verification-stamped. 20 of 22 regimes are `verified`; the two exceptions are
-early Big Game schedule/matrix boundaries (`MM-R002`, `MM-R003`) where primary
-sources fix the era but not the exact first affected draw date.
+verification-stamped. 21 of 22 regimes are `verified`; the sole exception is
+`MM-R002` (early Big Game Tuesday-schedule addition), which is
+`partially_verified` but pool-neutral — both sides of that boundary share
+pool group MM-S01, so the residual date uncertainty cannot contaminate
+statistical pooling.
 
-30 official sources were fetched and immutably preserved (SHA-256). 88 tests
+30 official sources were fetched and immutably preserved (SHA-256). 97 tests
 pass; the provenance and pooling-guard chain verifies end-to-end.
+
+**Corrective update (same date)**: the MM-R003 boundary was resolved to
+verified — the official MI Lottery press release states the 5/50+1/36 change
+applies to "wagers placed for the January 15, 1999 Big Game drawing" (first
+new-matrix draw Fri 1999-01-15; last old-matrix draw Tue 1999-01-12). A
+generic `first_unambiguous_draw` quarantine mechanism plus
+`UnverifiedBoundaryError` now makes silent assignment/pooling across any
+future unresolved material boundary impossible, and `verify_phase0.py` fails
+if an unverified material boundary lacks a quarantine window.
 
 ## B. Current verified game rules
 
@@ -92,17 +103,20 @@ Regime boundaries were additionally verified against actual draw data:
   cross-pool-group pooling. Regression tests pin every verified boundary date
   and prove (e.g.) a white-68 draw fails under the 5/59 regime and a
   Mega-Ball-25 draw fails under the 1/24 regime.
+- `UnverifiedBoundaryError` + `GameRegime.first_unambiguous_draw` — a generic
+  quarantine for unresolved *material* boundaries: draws in the uncertain
+  window can neither be assigned nor pooled.
 - `fortuna.provenance.ArtifactStore` — immutable content-addressed artifacts;
   never overwrites; dedupes by hash while recording retrieval events.
 
 ## G. Unresolved issues (honest gaps — no false precision)
 
-1. `MM-R002`/`MM-R003` (`partially_verified`): the Big Game's Tuesday-drawing
-   addition (~Feb 1998) and the exact first draw under the 5/50+1/36 matrix
-   (1999-01-12 vs 1999-01-15) are fixed to the era but not to the exact draw
-   date by a primary source. Impact is bounded: the Tuesday addition is
-   pool-neutral; the 1999 matrix boundary affects at most one draw's
-   assignment.
+1. `MM-R002` (`partially_verified`, schedule-only): the Big Game's exact
+   first Tuesday draw (~Feb 1998) is not pinned by a primary source. Both
+   sides are pool MM-S01, so the uncertainty cannot contaminate pooling — it
+   is exempt from quarantine by design.
+   (`MM-R003` was resolved to verified during the corrective pass: the MI
+   Lottery PR pins the 5/50+1/36 change to the 1999-01-15 drawing.)
 2. `DS-PB-EARLY-GAP`: no official machine-readable Powerball draw archive
    located before 2010-02-03 (NY) / 2009-01 (FL). Pre-2010 PB regimes are
    verified as *rules* but currently have no official draw-data source.
@@ -125,9 +139,10 @@ present; `.env` is ignored.
 
 ## I. Test / verification results
 
-- `pytest`: 88 passed (unit: schemas/rules/provenance/validation;
+- `pytest`: 97 passed (unit: schemas/rules/provenance/validation;
   data-contracts: all CSVs + cross-references + on-disk hash verification;
-  integration: end-to-end chain; regression: historical boundaries).
+  integration: end-to-end chain; regression: historical boundaries +
+  generic boundary-quarantine protection).
 - `ruff check src scripts tests`: clean.
 - `scripts/verify_phase0.py`: **PASS — 0 failures, 0 warnings**; all 30
   artifacts hash-verified against the manifest; all cross-references resolve.

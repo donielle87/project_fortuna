@@ -6,7 +6,11 @@ raises unless ``collect`` is used to gather per-draw results.
 
 from dataclasses import dataclass, field
 
-from fortuna.rules.assign import NoRegimeError, assign_regime
+from fortuna.rules.assign import (
+    NoRegimeError,
+    UnverifiedBoundaryError,
+    assign_regime,
+)
 from fortuna.schemas.draws import Draw, DrawValidationStatus
 from fortuna.schemas.regimes import GameRegime
 
@@ -116,7 +120,7 @@ def validate_draws(
                     f"draw claims {d.regime_id} but {d.draw_date} is governed by "
                     f"{actual.regime_id}"
                 )
-        except NoRegimeError as exc:
+        except (NoRegimeError, UnverifiedBoundaryError) as exc:
             reasons.append(str(exc))
         if reasons or collect:
             results[d.draw_id] = reasons
