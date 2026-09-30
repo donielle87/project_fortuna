@@ -41,8 +41,13 @@ deduplicated during grouping before reconciliation).
 
 ## B. Regime coverage (main stream)
 
-Every statistical pool group's observed span matches its regime span; all
-regimes are covered end-to-end by authoritative sources.
+Every statistical pool group's observed span reaches its regime boundaries —
+all 16 statistical regimes are represented end-to-end by authoritative
+sources (boundary/span coverage). This does not imply complete
+analysis-eligible draw-level coverage: one scheduled Mega Millions date
+(1998-02-03) is unrecovered, nine MM draws are eligible-blocked as
+Tier-3-only, and five MM draws are excluded for unresolved authoritative
+conflicts (Sections D and G).
 
 | Game | Statistical regime | Draws | Observed span |
 |---|---|---|---|

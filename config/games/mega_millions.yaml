@@ -8,6 +8,7 @@ draw_source_ids:
   - DS-MM-FL
 notes: >-
   Includes The Big Game era (1996-09-06 to 2002-05-14) as regimes MM-R001..
-  MM-R003. Rules of record live in metadata/game_regimes.csv. Big Game-era
-  winning numbers have no located official machine-readable archive
-  (DS-MM-BIGGAME-GAP).
+  MM-R003. Rules of record live in metadata/game_regimes.csv. The former
+  Big Game archive gap (DS-MM-BIGGAME-GAP) was resolved in the Phase 1
+  corrective gate by the official Maryland Lottery archive
+  (SRC-MD-MM-ARCHIVE, coverage from the first draw 1996-09-06).
