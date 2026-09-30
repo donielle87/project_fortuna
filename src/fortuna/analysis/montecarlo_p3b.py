@@ -33,9 +33,12 @@ def determinism_probe_p3b(
     return hashlib.sha256(draw_mains_ordered(rng, matrix, n).tobytes()).hexdigest()
 
 
+_CHUNK_ELEMENTS = 30_000_000  # same memory bound as simulation.montecarlo
+
+
 def _chunk_size(n_ord: int, n_pool: int) -> int:
-    """Replicates per memory chunk (~64 MB of ordered draws)."""
-    return max(1, int(64e6 / max(1, n_ord * 8)))
+    """Replicates per chunk; keys use n_ord*n_pool floats per replicate."""
+    return max(1, _CHUNK_ELEMENTS // max(1, n_ord * n_pool))
 
 
 def run_regime_p3b(

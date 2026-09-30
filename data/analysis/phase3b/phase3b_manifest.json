@@ -1,0 +1,185 @@
+{
+  "phase": "3B",
+  "experiment_id": "F-E004",
+  "classification": "exploratory",
+  "phase3b_preregistration_commit": "36679847845a4e9dbef07eff75b0d2ab9e1758c4",
+  "analysis_code_commit": "36679847845a4e9dbef07eff75b0d2ab9e1758c4",
+  "accepted_phase1_dataset_sha256": "200174427b4abcc6bcc0aa3761174db237ae52e266e88cfc88bae39f27c138ff",
+  "phase2_v4_observation_plan_sha256": "8309e1dd673e339b66b1fae09d02a0f2b205a62ada2882c1590645d1bf2ac10a",
+  "phase3_corrected_exploration_manifest_sha256": "632e43af81e4323ae2d96357f1db8933366ba7aca2f8462b5ac80b58b3d082e7",
+  "holdout_manifest_sha256": "1ad69bc101a88755db92498cc33922917cae3daa5c0b9e12d59530a607efc130",
+  "holdout_seal_v2_sha256": "6dc9a023b4bfd7b7fcfa321ebde9455687222eb0ef316a458d0d01effe18f2e0",
+  "physical_order_draw_counts": {
+    "FL-S01": 477,
+    "FL-S02": 546,
+    "MM-S04": 688,
+    "MM-S05": 328,
+    "MM-S06": 613,
+    "MM-S07": 122,
+    "PB-S04": 277,
+    "PB-S05": 249,
+    "PB-S06": 308,
+    "PB-S07": 1123
+  },
+  "physical_segment_lengths": {
+    "FL-S01": [
+      279,
+      1,
+      197
+    ],
+    "FL-S02": [
+      160,
+      315,
+      65,
+      4,
+      2
+    ],
+    "MM-S04": [
+      104,
+      17,
+      402,
+      13,
+      111,
+      41
+    ],
+    "MM-S05": [
+      25,
+      18,
+      29,
+      47,
+      57,
+      58,
+      44,
+      6,
+      7,
+      26,
+      4,
+      7
+    ],
+    "MM-S06": [
+      7,
+      12,
+      101,
+      5,
+      3,
+      14,
+      31,
+      426,
+      14
+    ],
+    "MM-S07": [
+      21,
+      60,
+      41
+    ],
+    "PB-S04": [
+      8,
+      75,
+      140,
+      54
+    ],
+    "PB-S05": [
+      176,
+      14,
+      34,
+      25
+    ],
+    "PB-S06": [
+      18,
+      70,
+      142,
+      78
+    ],
+    "PB-S07": [
+      173,
+      138,
+      130,
+      175,
+      139,
+      52,
+      18,
+      150,
+      148
+    ]
+  },
+  "min_physical_order_draws": 100,
+  "root_seed": 20260930,
+  "rng": "PCG64DXSM",
+  "monte_carlo": {
+    "batches": 4,
+    "replicates_per_batch": 5000,
+    "equipment_permutations": 10000
+  },
+  "families": {
+    "primary": [
+      "P3B-S001",
+      "P3B-S002",
+      "P3B-S003",
+      "P3B-S004",
+      "P3B-S006",
+      "P3B-S007",
+      "P3B-S008"
+    ],
+    "secondary": [
+      "P3B-S005",
+      "P3B-S009",
+      "P3B-S010"
+    ]
+  },
+  "bh_q": 0.1,
+  "holm_alpha": 0.05,
+  "promotion_min_abs_z": 2.5,
+  "sensitivity": {
+    "enabled": true,
+    "replicates": 250,
+    "critical_alpha": 0.05,
+    "power_target": 0.8,
+    "scenarios": {
+      "position1_bias": [
+        0.5,
+        1.0,
+        2.0,
+        4.0
+      ],
+      "conditional_bias": [
+        0.05,
+        0.15,
+        0.3,
+        0.6
+      ],
+      "serial_same_pos": [
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "serial_cross_pos": [
+        0.05,
+        0.1,
+        0.2,
+        0.4
+      ],
+      "temporal_position": [
+        1.0,
+        2.0,
+        4.0,
+        8.0
+      ]
+    }
+  },
+  "output_hashes": {
+    "phase3b_regime_sufficiency.csv": "37283ac1b5aba5af542e457f59be528178433286623e205302480a4a15033f7d",
+    "phase3b_physical_segments.csv": "19d65ffaa4e178dd13e20fea10719f7a3d5da97d98f1b835e33dfad375ab9932",
+    "phase3b_position_counts.csv": "0d3a680160dc48c72daa8fe331b5f5bfafd4043e989c6c4c0e1f53e03a237437",
+    "phase3b_position_residuals.csv": "0d3a680160dc48c72daa8fe331b5f5bfafd4043e989c6c4c0e1f53e03a237437",
+    "phase3b_ordered_pair_diagnostics.csv": "21761afb411711e72cce56367e142cca1ed19bd0d3a5029ea0439e9e074bf409",
+    "phase3b_serial_diagnostics.csv": "5916119235121f5e9a7192e7c1515cf9aff291ea977b420b7a36e75cd1f7544c",
+    "phase3b_temporal_diagnostics.csv": "d7c29226d20f3bc0aae00f21859f2cc6c5ca8d7c470a2ff8f893fb8fe35db611",
+    "phase3b_equipment_diagnostics.csv": "a7dd3ec063c5ef5b1c8f6a7b315f92d193d419664eb8759677c87766e71ea5cc",
+    "phase3b_primary_pvalues.csv": "5d00842f6f2feab2d070087df798b9a40438a57a13486fef3ed2cfe279c19b06",
+    "phase3b_secondary_pvalues.csv": "6a49bc2480fd17ed0969500b95395d8c6212aceb1dffd72b595b0a5d2b12077d",
+    "phase3b_sensitivity.csv": "4ece8289dc2faea6e0a9c6344f6b7620b70628cd12655a29e3806d70c2c994c9",
+    "phase3b_candidate_hypotheses.csv": "e317ee4f1e0cfbc1ed4c46c4131218a26cdec8366ca55c455a61215fd9ef90af"
+  },
+  "timestamp": "2026-09-30T19:51:28Z"
+}
