@@ -1,0 +1,211 @@
+{
+  "build_timestamp": "2026-09-30T12:57:00.041488+00:00",
+  "code_commit": "6f9b92c470a71b5845e91bb1e7420f2253486efe",
+  "coverage_by_game": {
+    "florida_lotto": {
+      "earliest": "1988-05-07",
+      "eligible": 4032,
+      "latest": "2026-09-26",
+      "total": 4032
+    },
+    "mega_millions": {
+      "earliest": "1996-09-06",
+      "eligible": 3062,
+      "latest": "2026-09-29",
+      "total": 3064
+    },
+    "powerball": {
+      "earliest": "1992-04-22",
+      "eligible": 4660,
+      "latest": "2026-09-28",
+      "total": 4660
+    }
+  },
+  "dataset_sha256": "9dd19bbbf51936e68e6a2529a2a3b476ad832628be50c2f03bd62dbfe2499645",
+  "dataset_version": "1.0.0",
+  "hash_algorithm": "sha256",
+  "ingestion_version": "1.0.0",
+  "num_analysis_eligible": 11754,
+  "num_draws": 11756,
+  "num_quarantined_or_rejected": 0,
+  "parser_version": "1.0.0",
+  "source_artifact_sha256": {
+    "SRC-FL-53ER09-54": [
+      "7dda2ae46f041bf72d0b226cabed4e8e887adbb7b57238aa9d80bed90907f34d"
+    ],
+    "SRC-FL-53ER20-76": [
+      "69e35857a7ef436320e8ddb7b9066a3d19fafb285792caf023edfbc95bffbaaa"
+    ],
+    "SRC-FL-53ER26-9": [
+      "a68ac65aa05ed42b7dfd00687bfbd082cc9db64806dafca4b56f60742ce47fca"
+    ],
+    "SRC-FL-53ER99-36": [
+      "30f2736802008998a7d5ccaec7272845ef233f9a4264c583e36aca1f6f68633a"
+    ],
+    "SRC-FL-FACTSHEET": [
+      "3b1cc728e92298ef80f232cf5c86eeb9d9db98707c4ff4640257cf77928d1d94"
+    ],
+    "SRC-FL-LOTTO-HIST-PDF": [
+      "ad02bc1838d766fa361a0ca983e19a1cd22320947122c0f72e31bab33d26c768"
+    ],
+    "SRC-FL-LOTTO-RULES": [
+      "c61b387740322e84eeea7848001a06ca0081ddc0954d4570267095545ea6a7e0"
+    ],
+    "SRC-FL-MM-HIST-PDF": [
+      "fdaeb9c025776d1f7c0282fe31bca8ef6e61618624f99b38204ff13ccbb467c3"
+    ],
+    "SRC-FL-OVERVIEW": [
+      "d932ca1d8565bfb1c7e4dbcaa5ae6bf83944ce64d3c8461c575baed0cbc56f47"
+    ],
+    "SRC-FL-PB-HIST-PDF": [
+      "68c4e9135603f085a950c2b983c6eda8b4d031d03f924dd82a650f27f61149dd"
+    ],
+    "SRC-FL-WINNING-NUMBERS": [
+      "7c9374915835572627c8fe1be16125b5888d5a2220feb0877073bc80f9db69cd"
+    ],
+    "SRC-MM-2025-PR": [
+      "e8b9d126b9464ebe9efa48183344fe0b5a68324e8835d41fa92490d24a764c3e"
+    ],
+    "SRC-MM-ABOUT": [
+      "c93617c14cf62340e337fec125f0211cfdba9a9aedf8fd51a0b80e5030b0cd32"
+    ],
+    "SRC-MM-FL-53ER13-32": [
+      "ae7f378d60c1932d7e4392872f60f7b0cdcc692ed68c21431b52ad06277d88a2"
+    ],
+    "SRC-MM-FL-53ER17-70": [
+      "527dde98e895c0275e222efb9174b3008648450d932532809e1e3826ae56c06c"
+    ],
+    "SRC-MM-FL-53ER25-12": [
+      "5fcdd0a0e19cfbc6bf24ccbd2713fb038234f6560206f7976195bbf564a12c89"
+    ],
+    "SRC-MM-MI-AR2001": [
+      "cebfd5bd6925bb9a7dd68c0804a54a8addffb93cd00a69964b64f9dbab6f500d"
+    ],
+    "SRC-MM-MI-PR1999": [
+      "b47212f0cb245ba591af9f6e34d70be37120f70e25f5d6d7e738e43d5d948153"
+    ],
+    "SRC-MM-MUSL-M2G2": [
+      "c1912e6b6aab5e646156f5d328ccaa1efe7a95bfdd428a829aaa18fa208333cc"
+    ],
+    "SRC-MM-NJ-RULES": [
+      "006cb53943ebca10ca58a649dd684f856b1c4c7b11b3e06c175f45cdc9e7ca91"
+    ],
+    "SRC-MM-TX-PROP": [
+      "1459de611932094be25bf0100d754662eedfdef75700ee6841a829dec01f2d6a"
+    ],
+    "SRC-MO-PB-XLSX": [
+      "b0b00aab3d8bcf0b98bb1a562688ae93b495702c0f34159f46865f6639551185"
+    ],
+    "SRC-NY-MM-ARCHIVE": [
+      "0d05b76fc99ecaaf791187a43e3eecc96fe0501420b7f360b8f04beb23ddcfb3",
+      "1299771e45ab5c995bdb991d50661993d1be7b8c713d3cff7b9d5fff2c9e01b0",
+      "1cad5355c0d154f1e9be10d2b8bff23d725db1307714f66814b889f63b433a3a",
+      "257b66f3c649f11318807065062f068e49752f058651707ac23cb46f50c9938e",
+      "25b6f71b46512ccb395829c9ce284d98d277e3b0fa4cb84cc3b742c244846ae0",
+      "2b3e5e3a0757f36b60bdf0520880f2fa8aafd1fa8d83f9f8ea3769d4d2486dd8",
+      "2feab1354182e91d236782d65a6da60b7f6ea58ee350a4028dd9aecd51a540de",
+      "374dabfd7916f4051abe0fc7222ee4d114a9679cb02be3eb6b5b7db9a0d6db78",
+      "3c7b1dcfa62a9b6d02edb34b19d4af3252bda349f8a39a4f52464cbfa9117cf8",
+      "3f74f6068671f70c5d1b2567fe5fb42db979ea23fe7593379c16c0eab56a890b",
+      "4653798f757f64ef5f09b6e3e9513df77a4aaca8dbfed5537d806cf86a2ed1bc",
+      "49db5af444215059a142cef5d00c6fbda17d7e07f85e8514a260d37a9c1e8cc3",
+      "4bdb670b9e89d295df1517a8f95cf5a88ba9dddcf9a4132036cd3f9c3abf1923",
+      "5c6e2820fb00ea5924d642eef78fdcec64fadcea5bc8a1dc0901106e6428ae86",
+      "5e819ddc985b2538f49c63594c6d5b23cae9e1ed3dd0b49ae62bd2c3e24208c5",
+      "695b04200d82324aaf0a37fbc45c0aebcf6ad06023695d185ed5de8b34446763",
+      "6a233d28a353784eaf99e4820ade4fd6e33ad8705985b3d51c898d153d0b5781",
+      "72ab8f019242acd4673e94f658730601fa737c6eeed4d07331006284c71412e9",
+      "774dd9dd6a298e05a5c0984b446636542275304beed287873e7e5dbeda809f2f",
+      "8f7dd56784d8873b357ac0333336b85c6c8856327544f62ec0e6be87284f247c",
+      "9266882e25f554b2b383037cab397fef78fb6c32a56c41c60f8516e060f1ac00",
+      "a2c0d8d4e6e6ede56bdc67cc9cdfd7e9ddde98bab6930726d4f0a824f86ed907",
+      "adee7918c2f4724809fc2a49ea5cb515bfb151f0bb087231b3edfb465ecb1544",
+      "b0a1f9efd23eb5ed5e0738887bad1b877300b2bf67b788debd187bfdf2242371",
+      "b19731e5e389aca577cae0b2a741a5bd583abf0cab71d815d10913016ac3e629",
+      "b1cdb4e2c132e477688086eefe1daeb05dc8ccc978250f1b70b4a5c0cadb2a66",
+      "b42186e0ae743200dff209bb708d39004688ece6921e55dfef973c771b4766b2",
+      "cc8312b44f5edfaf8ef32c609e729e123a0785171507807892ebe2b1c9f0bb0c",
+      "cdbea0035e09f348299f28a0ba252164386e977aee0aeba49ca501e691f63ece",
+      "d9d812c0fa771f80d7aa2f3f40c6ca5f1eaa6008a14f00ee40659ad04606eb19",
+      "dcb37ccefd16c93091b43c6e894317577fdfc9fbcbabdf006121fc78fcf054ee"
+    ],
+    "SRC-NY-MM-DATA": [
+      "291f2202844c64662620377a26fa8b8d0d743425695f460fba402efc2ba9b6c2",
+      "f6217f5f0fa0dca1b4fa2a38049f02b1838fd54a7c3823fcbdd45cd1b926cdcf"
+    ],
+    "SRC-NY-PB-ARCHIVE": [
+      "02ef00ec215cec60f1027be93a34b410ed42a5c1f9339f54f45c1e9e718e9f32",
+      "1374f7f60c40542067a6a2946a5d14afb10581011ee6d45efe329fc221c7d434",
+      "16a9a626902ff01dfc55ebc64156d972a62ae0ed3c5d005e79432379e79c34cf",
+      "2180f57fb9d064c5393ea20e51f5a9ec78f88ae0671560cc95f473c9965ce90c",
+      "25821dadfb4e6391aa6265e8608f92d7165b4e398196895ee30d9e77d5b0fb8c",
+      "273fad56feb95d5d09e4d4ff2a18cc0ea08d46df8ca7141a70b0d0e08809900c",
+      "27ad8ae04a7c8acd524c97db45744549f190ccd9811ca2d09541e00d668bf8e9",
+      "3a7f50a8bb3da3f91a17771eb42dcc4ce61fa4ef3b6a2e83f35f36cfa292b74e",
+      "42404d89b7435d2a61a8156f5486208c83649cd4f7df3cac9a01d9ea9f53dc31",
+      "43e3be744d048d356b484b4204dab0b46c8329bba68cf0f26a9ea1e78a40a386",
+      "444ebf3a3dec0919a3911c3269d573970eb65925b9f0d617e939c8ae46dc26ed",
+      "4b67b63c8b487771cb2b9757890e49848e9a9a8dd28af1334cb0d17473158716",
+      "4c22b8ca57986c8fec3f055c7e35793c33ca2232a1d6211aeba17d85130fd416",
+      "5d4d4bc0f6b19cfae0cf26c7da1e03e095ea70d9ad3e11c968bdc1ccb1cf6f55",
+      "6c1cc11da861017535667353fede2cf0e2b2383ac781696ed2ebcca5c1504727",
+      "7212ed68123b7cbdbacfcbf17ab9ab30cc0d401b54f3e37af6357ac7c8026ee1",
+      "7cf0c288d1b5be7446899d327585866b82ddaf7579bc0ae7b7ea13b6bde4f30f",
+      "947e6f171c9f664d1b8999db5e24a993213aacdd766ed0d51ad8cf350e10a6af",
+      "9c67405ad145fe5c5ebe38a346f5b56c823a1322bd4b82abf5da2ff4c9a9fff4",
+      "9dfc9480ecccb9ef5a6ab5765ed8eb4fe2c4ee3c1e0ae834ff3158da9ee0fa4b",
+      "a1bd59ef68de63e22fb51c220027325149782ec7c0459a28f58d444b5d1c6231",
+      "a3ad26ccb4501c02f26bb708c0a0e1c68c9dd7d1343aea915197af68a26a4441",
+      "ae4f7ee93a988f316d7916bc49a44c36b1d70865027318782e7b2cddb07a4f93",
+      "b3771ea6bbf5ee909f69efcf1c00e30558a054ee8402bb03f2d26836962d3849",
+      "b549424a83e54cfbcd47e58dc37d8952342c10e6c2f73b18df259570304996c5",
+      "b565454895e7183140e99ef878e0505a1a7f91232658fbe43d19a5a0090f6df3",
+      "bae29e4941afd3926e52a955bf216437fe403f7284f96716a582a32abac081de",
+      "cbf472000decc57a09ef9bfafa75a7e751c1a297417587d74c6c20ed8a10aebf",
+      "cfd52de9173c5bc6f84971b091285e46d82dfabbd1f6aa0cc1a0f6131dca4175",
+      "e7a139b70a18c98c93e29b5de5438f7db8b1ecf8dd4cea8a5eeb24dbc748f0f9",
+      "e92038964592c481eeaa0351955de7dc0d9e251c126fb5d05295b2bb6a5ab00f",
+      "eaa422593edb9d9c9c87d2d9b51ca98d8fc17eff0d79f620fd63fe045251f9e8",
+      "edf92fbe2811f0fc0a4549af455baa2a3ca32865c44fa2e671fb5e60ae69f081",
+      "f00f86e2681a361115c5d952eebb9854d3d8301a80801a9dd29ee49fe7b2b8c2",
+      "fda30a3753d55dd10ab7cebfa95ec30083037588b999c2daa8d8f1309144e236"
+    ],
+    "SRC-NY-PB-DATA": [
+      "eb4f70e8c02d78d598372f33bdd524ab8c880e1014c81845dea7b8b4988cad98",
+      "f68e972c21b6d0a050a69a04afab9635ec7ef5f938650c6ca8045f922ca3dedd"
+    ],
+    "SRC-PB-FL-53ER08-84": [
+      "0a4c52b8ba0e7f96e9f1f1711c3f9b018564939bf89c21caf4f9b1d0a01e68c5"
+    ],
+    "SRC-PB-FL-53ER12-6": [
+      "dbd2f41198dc184abe6a16705eb6f7812e1e65916a2a9d7967e1a1c80bde3f8f"
+    ],
+    "SRC-PB-FL-53ER25-13": [
+      "a189572e3b563c093164328317d5544c023c53bdaf0ea61d648fbb78717e4baf"
+    ],
+    "SRC-PB-FL-FAR-2015": [
+      "139382cb3f7ab9d162b9ec9aa893a563d18a7ac87e28ae1a5fbb4849da167a02"
+    ],
+    "SRC-PB-HOME": [
+      "5964b0653a226c1567b223832dde390b95915f53cd695905d3371e3afff3ede7"
+    ],
+    "SRC-PB-MONDAY-PR": [
+      "3b7d272c438b72f0cbc753a5ea8c65be780d5a6ceb3fcb831b1c9418e918ff66"
+    ],
+    "SRC-PB-MUSL-RULES": [
+      "1d2635fb080772b60cc49f030faa8d678f49d858844bd33d4a0126c23f68f8fb"
+    ],
+    "SRC-PB-VT-2015RULES": [
+      "b8bdbcaef0ff1d20c55c603ec0270bb6d5c0e3676c1e8297edaf27003681538d"
+    ],
+    "SRC-PB-WI-TIMELINE": [
+      "b29bbcdd76dd5d12ea18f95001876860423ede2d9a5cd6cd71535f1c4536f90a"
+    ],
+    "SRC-TX-MM-CSV": [
+      "4ff3abf4ca67957fc6a8c5b79c95a0c5013a1ccbfb59468dccf9615a439bd515"
+    ],
+    "SRC-TX-PB-CSV": [
+      "8e769eebd6af416a74790715547d1f01493a46986f0e3e7c1469d23835212047"
+    ]
+  }
+}

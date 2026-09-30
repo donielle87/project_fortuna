@@ -1,0 +1,2 @@
+game_id,expected_draw_date,regime_id,statistical_regime_id,missing_from_all_sources,known_exception,source_coverage,resolution_status,notes
+mega_millions,1998-02-03,MM-R002,MM-S01,true,false,,unresolved,

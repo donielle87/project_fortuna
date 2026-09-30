@@ -66,17 +66,35 @@ window, format, which metadata fields are present (`has_machine_id`,
 recommended ingestion strategy. Rows may document *gaps* (no URL) — e.g.
 `DS-PB-EARLY-GAP`, `DS-MM-BIGGAME-GAP`.
 
-## Future draw tables (schemas/draws.py)
+## Draw tables (schemas/draws.py) — Phase 1 canonical outputs
 
-`Draw`: `draw_id` `XX-D-YYYY-MM-DD`, `regime_id` (required — a draw without a
-regime cannot exist), `draw_date`, `main_numbers` in **source-reported**
-order, `special_ball`, `multiplier`, jackpot fields, `machine_id`,
-`ball_set_id`, provenance fields, `validation_status`.
+`Draw`: `draw_id` `XX-D-YYYY-MM-DD` (main) or `XX-D-YYYY-MM-DD-DP`
+(Double Play), `regime_id` (required — a draw without a regime cannot
+exist), `draw_date`, `draw_stream` (`main`|`double_play`), `main_numbers`
+in **source-reported** order, `numbers_order` (`physical_draw_order` |
+`source_sorted_order` | `unknown_order` — never inferred), `special_ball`,
+`multiplier`, jackpot fields, `machine_id`, `ball_set_id`, provenance
+fields (`source_id`, `raw_artifact_sha256`, `retrieved_at`,
+`parser_version`, `ingestion_version`), `validation_status`,
+`analysis_eligible`, `provisional`, `data_quality_notes`,
+`corroborating_source_ids`.
 
-`DrawNumber`: normalized (draw_id, ball_position, ball_type, number).
-`ball_position` is the source-defined ordering — physical draw order only if
-the source preserves it (FL Lotto archive: draw order through 2005-01-29,
-sorted ascending from 2005-02-02; NY Open Data: always sorted).
+`DrawNumber`: normalized (draw_id, ball_position, ball_type, number,
+position_semantics). `ball_position` is the source-defined ordering —
+physical draw order only if the source preserves it (FL Lotto archive:
+draw order through 2005-01-29, sorted ascending from 2005-02-02; NY Open
+Data and NY archive: always sorted; MO xlsx: `Numbers As Drawn` physical
+order where it differs from the sorted column; TX CSV: draw order).
+
+## Phase 1 ledgers
+
+`metadata/missing_draws.csv`: expected scheduled draw dates (per regime
+`drawing_days`) absent from every source — status, coverage, notes.
+
+`metadata/reconciliation_registry.csv`: per-(draw, source-pair, field)
+comparison — `MATCH` | `FIELD_COMPLEMENT` | `CONFLICT` | `UNRESOLVED`.
+Winning-number conflicts are never silently resolved; the affected draw is
+analysis-ineligible until resolved.
 
 ## registry/*.csv — governance ledgers
 

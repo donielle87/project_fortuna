@@ -26,5 +26,8 @@ Thumbs.db
 .DS_Store
 *.swp
 
+# Scratch / exploration artifacts (not part of the reproducible pipeline)
+_scratch/
+
 # NOTE: data/raw/ is intentionally NOT ignored.
 # Raw retrieved source artifacts are version-controlled for provenance.

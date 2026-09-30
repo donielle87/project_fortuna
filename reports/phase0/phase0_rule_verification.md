@@ -17,7 +17,7 @@ verification-stamped. 21 of 22 regimes are `verified`; the sole exception is
 pool group MM-S01, so the residual date uncertainty cannot contaminate
 statistical pooling.
 
-30 official sources were fetched and immutably preserved (SHA-256). 97 tests
+30 official sources were fetched and immutably preserved (SHA-256). 98 tests
 pass; the provenance and pooling-guard chain verifies end-to-end.
 
 **Corrective update (same date)**: the MM-R003 boundary was resolved to
@@ -139,7 +139,7 @@ present; `.env` is ignored.
 
 ## I. Test / verification results
 
-- `pytest`: 97 passed (unit: schemas/rules/provenance/validation;
+- `pytest`: 98 passed (unit: schemas/rules/provenance/validation;
   data-contracts: all CSVs + cross-references + on-disk hash verification;
   integration: end-to-end chain; regression: historical boundaries +
   generic boundary-quarantine protection).
@@ -157,5 +157,5 @@ than guessed — all met.
 to the next phase *only after* explicit project-owner/research-lead
 authorization. Do not begin Phase 1 (draw ingestion/analysis) on the basis of
 this report alone. Priority follow-ups if authorized: close the Big Game and
-pre-2010 Powerball draw-data gaps, and resolve the two `partially_verified`
-Big Game boundary dates.
+pre-2010 Powerball draw-data gaps, and (optionally) pin `MM-R002`'s exact
+first-Tuesday date — schedule-only and pool-neutral, so non-blocking.

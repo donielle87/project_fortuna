@@ -12,7 +12,9 @@ from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from fortuna.schemas.common import parse_list
 
 
 class BallType(str, Enum):
@@ -20,10 +22,31 @@ class BallType(str, Enum):
     SPECIAL = "special"
 
 
+class DrawStream(str, Enum):
+    """Which drawing within a game a record belongs to.
+
+    ``DOUBLE_PLAY`` covers Florida Lotto Double Play (and Powerball Double
+    Play should it ever be ingested): a separate drawing conducted after the
+    main draw that must never be conflated with the main series.
+    """
+
+    MAIN = "main"
+    DOUBLE_PLAY = "double_play"
+
+
+class OrderSemantics(str, Enum):
+    """What ``ball_position``/``main_numbers`` ordering means."""
+
+    PHYSICAL_DRAW_ORDER = "physical_draw_order"
+    SOURCE_SORTED_ORDER = "source_sorted_order"
+    UNKNOWN_ORDER = "unknown_order"
+
+
 class DrawValidationStatus(str, Enum):
     PENDING = "pending"
     VALID = "valid"
     REJECTED = "rejected"
+    QUARANTINED = "quarantined"
 
 
 class Draw(BaseModel):
@@ -31,7 +54,7 @@ class Draw(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    draw_id: str = Field(pattern=r"^[A-Z]{2,4}-D-\d{4}-\d{2}-\d{2}(-\d+)?$")
+    draw_id: str = Field(pattern=r"^[A-Z]{2,4}-D-\d{4}-\d{2}-\d{2}(-[A-Z0-9]+)?$")
     game_id: str
     regime_id: str = Field(
         description="REQUIRED — no draw may exist without a regime assignment"
@@ -41,9 +64,14 @@ class Draw(BaseModel):
     drawing_identifier: str | None = Field(
         default=None, description="Official draw/serial identifier if the source provides one"
     )
+    draw_stream: DrawStream = DrawStream.MAIN
 
     main_numbers: list[int] = Field(
         min_length=1, description="Main-ball numbers in source-reported order"
+    )
+    numbers_order: OrderSemantics = Field(
+        default=OrderSemantics.UNKNOWN_ORDER,
+        description="Semantics of main_numbers ordering — never inferred",
     )
     special_ball: int | None = None
     multiplier: float | None = Field(
@@ -61,8 +89,38 @@ class Draw(BaseModel):
     source_id: str | None = None
     retrieved_at: datetime | None = None
     raw_artifact_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    parser_version: str | None = None
     ingestion_version: str | None = None
     validation_status: DrawValidationStatus = DrawValidationStatus.PENDING
+
+    # Phase 1 additions
+    analysis_eligible: bool = Field(
+        default=False,
+        description="False unless the record passes every eligibility gate "
+        "(provenance, validation, regime, non-quarantined, non-provisional, "
+        "no unresolved winning-number conflict).",
+    )
+    provisional: bool = Field(
+        default=False,
+        description="True for non-authoritative/secondary-source records "
+        "retained for reconciliation only — never analysis-eligible.",
+    )
+    data_quality_notes: str | None = None
+    corroborating_source_ids: list[str] = Field(default_factory=list)
+
+    @field_validator("corroborating_source_ids", mode="before")
+    @classmethod
+    def _split_sources(cls, v: object) -> object:
+        if v is None or isinstance(v, str):
+            return parse_list(v)
+        return v
+
+    @field_validator("main_numbers", mode="before")
+    @classmethod
+    def _split_numbers(cls, v: object) -> object:
+        if isinstance(v, str):
+            return [int(x) for x in parse_list(v)]
+        return v
 
     def to_draw_numbers(self) -> list["DrawNumber"]:
         """Normalized representation. Positions are source-reported order
@@ -74,6 +132,7 @@ class Draw(BaseModel):
                 ball_position=i + 1,
                 ball_type=BallType.MAIN,
                 number=n,
+                position_semantics=self.numbers_order,
             )
             for i, n in enumerate(self.main_numbers)
         ]
@@ -84,6 +143,7 @@ class Draw(BaseModel):
                     ball_position=len(self.main_numbers) + 1,
                     ball_type=BallType.SPECIAL,
                     number=self.special_ball,
+                    position_semantics=self.numbers_order,
                 )
             )
         return rows
@@ -101,6 +161,7 @@ class DrawNumber(BaseModel):
     )
     ball_type: BallType = BallType.MAIN
     number: int
+    position_semantics: OrderSemantics = OrderSemantics.UNKNOWN_ORDER
 
     @model_validator(mode="after")
     def _check_position(self) -> "DrawNumber":
