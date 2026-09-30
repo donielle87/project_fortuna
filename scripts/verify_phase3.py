@@ -188,12 +188,21 @@ def main() -> int:
                          "ticket", "prediction"))
     ]
     check(not banned_files, f"no prohibited output files {banned_files}")
-    modeling_artifacts = [
-        p for p in (ROOT / "registry/model_registry.csv",
-                    ROOT / "registry/prediction_ledger.csv")
-        if p.exists() and len(p.read_text().splitlines()) > 1
-    ]
-    check(not modeling_artifacts, "no models/predictions registered")
+    # Phase 4A (F-E005) legitimately registered the frozen F-M family;
+    # anything else — or any logged prediction — remains prohibited.
+    import csv as _csv
+    allowed_models = {"F-M000", "F-M001", "F-M002", "F-M003", "F-M004"}
+    mr = ROOT / "registry/model_registry.csv"
+    model_rows = list(_csv.DictReader(mr.open())) if mr.exists() else []
+    check(
+        {r["model_id"] for r in model_rows} <= allowed_models,
+        "only authorized F-E005 models registered",
+    )
+    pl = ROOT / "registry/prediction_ledger.csv"
+    check(
+        not pl.exists() or len(pl.read_text().splitlines()) <= 1,
+        "no predictions registered",
+    )
 
     if FAILS:
         print(f"PHASE 3 (F-E002 IMMUTABILITY) VERIFICATION FAILED "

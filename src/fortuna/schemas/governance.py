@@ -67,7 +67,7 @@ class ModelRegistration(BaseModel):
 
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
 
-    model_id: str = Field(pattern=r"^M-\d{3}$")
+    model_id: str = Field(pattern=r"^(M-\d{3}|F-M\d{3})$")
     registered_date: date
     game_id: str
     statistical_regime_id: str

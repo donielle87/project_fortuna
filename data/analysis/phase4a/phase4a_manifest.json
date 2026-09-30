@@ -1,0 +1,151 @@
+{
+  "experiment_id": "F-E005",
+  "phase4a_preregistration_commit": "b1bff36913fac7168a388b83a08ac60aca2b0c33",
+  "analysis_code_commit": "b1bff36913fac7168a388b83a08ac60aca2b0c33",
+  "dataset_sha256": "200174427b4abcc6bcc0aa3761174db237ae52e266e88cfc88bae39f27c138ff",
+  "exploration_manifest_sha256": "632e43af81e4323ae2d96357f1db8933366ba7aca2f8462b5ac80b58b3d082e7",
+  "holdout_manifest_sha256": "1ad69bc101a88755db92498cc33922917cae3daa5c0b9e12d59530a607efc130",
+  "holdout_seal_v2": "6dc9a023b4bfd7b7fcfa321ebde9455687222eb0ef316a458d0d01effe18f2e0",
+  "n_exploration_draws": 8248,
+  "n_holdout_draws_metadata_only": 2072,
+  "models": {
+    "F-M000": {
+      "kind": "uniform",
+      "main": "all weights w_i = 1 -> P(S) = 1/C(N,K)",
+      "special": "uniform 1/M"
+    },
+    "F-M001": {
+      "kind": "shrunk_expanding_frequency",
+      "main": "w_i = c_i + A*p with A = 100 pseudo-draws, p = K/N",
+      "prior_strength_draws": 100,
+      "special": "p_i = (c_i + A/M) / (n + A), A = 100"
+    },
+    "F-M002": {
+      "kind": "ewma_frequency",
+      "half_life_draws": 50,
+      "main": "w_i = ewma_i + A*p with A = 25 decay-weight units, p = K/N",
+      "pseudo_strength": 25,
+      "special": "p_i prop ewma_i + A/M, A = 25"
+    },
+    "F-M003": {
+      "kind": "gap_regression",
+      "features_main": [
+        "gap_z"
+      ],
+      "features_special": [
+        "gap_z"
+      ],
+      "score_clip": 8.0,
+      "l2_grid": [
+        0.1,
+        1.0,
+        10.0,
+        100.0
+      ]
+    },
+    "F-M004": {
+      "kind": "regularized_multifeature",
+      "features_main": [
+        "expanding_freq_z",
+        "ewma25_z",
+        "ewma100_z",
+        "gap_z",
+        "prev_draw_indicator",
+        "affinity_prev"
+      ],
+      "features_special": [
+        "expanding_freq_z",
+        "ewma25_z",
+        "ewma100_z",
+        "gap_z",
+        "prev_special_indicator"
+      ],
+      "affinity_pseudo_draws": 50,
+      "score_clip": 8.0,
+      "l2_grid": [
+        0.1,
+        1.0,
+        10.0,
+        100.0
+      ]
+    }
+  },
+  "feature_schema_sha256": "19a8cfa3ac7c0164fa65e510d51ba175011275002d549bb46b9e5d9a7d1c880a",
+  "warmup": 100,
+  "refit_cadence": 25,
+  "inner_validation": {
+    "inner_fit_fraction": 0.8,
+    "inner_validation_fraction": 0.2,
+    "min_inner_fit_draws": 50,
+    "fallback_penalty": 100.0,
+    "tie_break": "stronger_penalty",
+    "cross_validation": "never"
+  },
+  "penalty_grid": [
+    0.1,
+    1.0,
+    10.0,
+    100.0
+  ],
+  "scoring": "exact set log loss; d_t = logP_model - logP_uniform",
+  "candidate_pool_sizes": [
+    10,
+    15,
+    20
+  ],
+  "predictive_gate": {
+    "1_positive_pooled_logscore": "pooled cumulative d_main > 0",
+    "2_evalue": "E_model >= 80",
+    "3_mixture_evalue": "E_mix >= 20",
+    "4_regime_positive_fraction": "positive mean d_main in >=60% of regimes with >=50 scored predictions",
+    "5_concentration": "no single regime contributes >50% of total positive log-score gain",
+    "6_m15_lift": "m=15 relative mean-hit lift >= 0.02 vs exact hypergeometric expectation",
+    "7_m15_ci": "paired 95% CI for m=15 absolute hit improvement excludes zero",
+    "8_no_leakage": "no identified leakage/provenance defect",
+    "9_synthetic_controls": "implementation passes positive and null synthetic controls"
+  },
+  "e_gates": {
+    "model": 80.0,
+    "mixture": 20.0
+  },
+  "n_predictions_by_regime": {
+    "FL-S01": 379,
+    "FL-S02": 2148,
+    "MM-S01": 34,
+    "MM-S02": 173,
+    "MM-S03": 155,
+    "MM-S04": 595,
+    "MM-S05": 234,
+    "MM-S06": 520,
+    "MM-S07": 24,
+    "PB-S01": 362,
+    "PB-S02": 311,
+    "PB-S03": 141,
+    "PB-S04": 180,
+    "PB-S05": 152,
+    "PB-S06": 210,
+    "PB-S07": 1030
+  },
+  "output_hashes": {
+    "phase4a_walkforward_predictions.csv": "e05500ebc6bc194be3b1188f68a5905473b49ed198c3dbbf520ee56666d43339",
+    "phase4a_logscore_by_draw.csv": "15ed6e03f1e2994a2843d17f216d6b3c8ada0d337adf7dc1b4da6bb21cac273d",
+    "phase4a_logscore_summary.csv": "75bcac5e8fbc49c2e7a2e89561e86a5e0eb8e4bdf2082c6ebee7aaaf3db13584",
+    "phase4a_regime_summary.csv": "21a414b75c0d774a5164bbab5153fedaae92f1978e39cd9f3dba1e35258edef2",
+    "phase4a_candidate_pool_metrics.csv": "9be172438755fa838c85a7fff2e04b017c3a450f08be8b32559e97b270df482a",
+    "phase4a_special_ball_metrics.csv": "0dc3ad4ce6e9ced145d5226af4f1339d39104f0cb27bca7314a6be400fb3402d",
+    "phase4a_evalues.csv": "cd83d9a2fe681498133cd1e69471efbe8e8b9e480d48d6aa129b7670772b0105",
+    "phase4a_hyperparameter_history.csv": "44e51a2b85fefd986db6dadcc7aa15777428814942a6ba55429138dcc56a3203",
+    "phase4a_synthetic_controls.csv": "21b549d23fac08ceed9c2d67e4b650e657c3926e5e712c4b97cc623a4023792a",
+    "phase4a_model_gate.csv": "ea2fe12defc6a83b42fd41a44b70765f6d2c3b236215b678b78dc0ac9dadcae4",
+    "phase4a_candidate_models.csv": "ab6964eb62779185e5213ec37cd24407b66f1244ca0e00b0a6843dd4870826c0"
+  },
+  "control_pass": {
+    "positive": true,
+    "null": true
+  },
+  "software": {
+    "python": "3.12.5",
+    "numpy": "2.1.3"
+  },
+  "timestamp": "2026-09-30T22:16:24Z"
+}

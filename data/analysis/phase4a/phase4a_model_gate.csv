@@ -1,0 +1,5 @@
+model_id,c1_positive_pooled_logscore,c2_evalue_ge80,c3_emix_ge20,c4_regime_fraction,c5_concentration,c6_m15_lift,c7_m15_ci_excludes_zero,c8_no_leakage,c9_synthetic_controls,regime_positive_fraction,n_eligible_regimes,concentration,gate
+F-M001,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,PASS,PASS,0.000,14,1.0000,FAIL
+F-M002,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,PASS,PASS,0.000,14,1.0000,FAIL
+F-M003,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,PASS,PASS,0.214,14,0.6006,FAIL
+F-M004,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,FAIL,PASS,PASS,0.071,14,0.5444,FAIL
