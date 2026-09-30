@@ -37,7 +37,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 ROOT = Path(__file__).resolve().parent.parent
 FAILS: list[str] = []
 PREREG = ROOT / "research/preregistrations/F-E001-phase2-fair-null-baseline.md"
-CONFIG = ROOT / "config/experiments/F-E001.v2.yaml"   # effective (D-003)
+CONFIG = ROOT / "config/experiments/F-E001.v3.yaml"   # effective (D-003+D-004)
+CONFIG_V2 = ROOT / "config/experiments/F-E001.v2.yaml"
 CONFIG_V1 = ROOT / "config/experiments/F-E001.yaml"   # frozen Commit-A original
 PLAN = ROOT / "metadata/phase2_observation_plan.csv"
 OUT = ROOT / "data/reference/null_baselines"
@@ -79,14 +80,22 @@ def main() -> int:
     check(man["dataset_sha256"] == FROZEN_SHA, "frozen Phase 1 dataset hash")
     check(PREREG.exists(), "F-E001 preregistration exists")
     check(CONFIG_V1.exists(), "F-E001 frozen (v1) config exists")
-    check(CONFIG.exists(), "F-E001 effective (v2, D-003) config exists")
+    check(CONFIG_V2.exists(), "F-E001 v2 config exists (D-003)")
+    check(CONFIG.exists(), "F-E001 effective (v3, D-004) config exists")
     check(
         (ROOT / "research/preregistrations/"
          "F-E001-amendment-01-convergence-se.md").exists(),
-        "convergence-SE amendment (D-003) documented",
+        "convergence-SE amendment (D-003) preserved",
+    )
+    check(
+        (ROOT / "research/preregistrations/"
+         "F-E001-amendment-02-shared-history-stream.md").exists(),
+        "shared-history stream amendment (D-004) exists",
     )
     log_txt = (ROOT / "registry/decision_log.csv").read_text()
     check("D-003" in log_txt, "decision log records convergence amendment")
+    check("D-004" in log_txt, "decision log records shared-history governance")
+    check("D-005" in log_txt, "decision log records F-S007/F-S008 correction")
     check(PLAN.exists(), "metadata-only observation plan exists")
     if FAILS:
         print(f"PHASE 2 VERIFICATION FAILED ({len(FAILS)} checks)")
@@ -99,6 +108,20 @@ def main() -> int:
     check(
         int(cfg["monte_carlo"]["replicates_per_statistic_regime"]) == 20000,
         "20,000 replicates frozen",
+    )
+    check(cfg["accepted_phase1_dataset_sha256"].strip() == FROZEN_SHA,
+          "v3 config pins frozen dataset hash")
+    check("HISTORIES" in CONFIG.read_text(),
+          "effective config documents shared-history stream scope")
+    check("statistic_id" in CONFIG_V1.read_text(),
+          "original v1 config preserves frozen statistic_id scope text")
+    # preregistration file unchanged since Commit A (audit trail intact)
+    prereg_touching = _git(
+        "log", "--format=%H", "--", str(PREREG.relative_to(ROOT))
+    ).splitlines()
+    check(
+        len(prereg_touching) == 1,
+        "original preregistration unmodified since Commit A",
     )
 
     # ---- preregistration committed before baseline ----
@@ -301,6 +324,79 @@ def main() -> int:
             == manifest["determinism_probe_sha256"][sid]
         )
     check(probe_ok, "deterministic regeneration probes match")
+
+    # ---- F-S007/F-S008 segment-boundary correctness (D-005) ----
+    from fortuna.simulation.matrix import RegimeMatrix
+    from fortuna.simulation.statistics import history_statistics
+
+    mtx = RegimeMatrix("T", "test", 5, 1, 45)
+    absent3 = np.tile([2, 3, 4, 5, 6], (3, 1))   # label 1 absent all 3 draws
+    present3 = np.tile([1, 3, 4, 5, 6], (3, 1))  # label 1 present all 3 draws
+    check(
+        history_statistics(absent3, None, mtx, [3])["F-S007"] == 3.0,
+        "F-S007 counts drought beginning at segment start",
+    )
+    check(
+        history_statistics(present3, None, mtx, [3])["F-S008"] == 3.0,
+        "F-S008 counts streak beginning at segment start",
+    )
+    check(
+        history_statistics(absent3[:1], None, mtx, [1])["F-S007"] == 1.0
+        and history_statistics(present3[:1], None, mtx, [1])["F-S008"] == 1.0,
+        "length-one segment runs count as 1",
+    )
+    two_seg = np.vstack([absent3[:2], absent3[:3]])  # absent 2 | absent 3
+    check(
+        history_statistics(two_seg, None, mtx, [2, 3])["F-S007"] == 3.0,
+        "runs cannot bridge a segment boundary",
+    )
+
+    # corrected outputs must record the corrected-code commit
+    stats_fix = _git(
+        "log", "-1", "--format=%H", "--",
+        "src/fortuna/simulation/statistics.py",
+    ).strip()
+    anc = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", stats_fix,
+         manifest["simulation_code_commit"]],
+        cwd=ROOT,
+    )
+    check(
+        anc.returncode == 0,
+        "manifest code commit contains corrected F-S007/F-S008 code",
+    )
+
+    # ---- pre-correction baseline diff: only F-S007/F-S008 may change ----
+    numeric_cols = ("mean", "var", "std", "se_mean", "min", "max")
+    old_summary = _git(
+        "show",
+        "f7ccf64dc5f8a8421bd32efb3cd3192f5c1f0bfe:"
+        "data/reference/null_baselines/history_baseline_summary.csv",
+    )
+    if old_summary:
+        old_map = {
+            (r["statistical_regime_id"], r["statistic_id"]): r
+            for r in csv.DictReader(old_summary.splitlines())
+        }
+        new_map = {
+            (r["statistical_regime_id"], r["statistic_id"]): r
+            for r in summ
+        }
+        unexpected, run_changed = [], []
+        for key, new_r in new_map.items():
+            old_r = old_map.get(key)
+            if old_r is None:
+                continue
+            diff = any(old_r[c] != new_r[c] for c in numeric_cols)
+            if diff and key[1] in ("F-S007", "F-S008"):
+                run_changed.append(key)
+            elif diff:
+                unexpected.append(key)
+        check(not unexpected,
+              f"only F-S007/F-S008 baselines changed {unexpected[:5]}")
+        check(bool(run_changed), "F-S007/F-S008 baselines did change")
+    else:
+        check(False, "pre-correction baseline retrievable for diff audit")
 
     # ---- multiplicity utilities ----
     from fortuna.statistics.multiple_testing import benjamini_hochberg, holm

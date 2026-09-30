@@ -116,24 +116,38 @@ def _overlaps(mains0: np.ndarray) -> np.ndarray:
     return (mains0[:-1, :, None] == mains0[1:, None, :]).any(axis=2).sum(axis=1)
 
 
-def _max_false_run(m: np.ndarray, seg_starts: np.ndarray) -> int:
-    """Longest absence run per column, confined to segments."""
-    md = m.copy()
-    md[seg_starts] = True
-    n = m.shape[0]
+def _segment_slices(n: int, seg_start_idx: np.ndarray) -> list[tuple[int, int]]:
+    """Contiguous [start, end) draw-index ranges for each segment."""
+    bounds = [int(s) for s in seg_start_idx] + [n]
+    return list(zip(bounds[:-1], bounds[1:], strict=True))
+
+
+def _max_run_absent_in_segment(seg: np.ndarray) -> int:
+    """Longest run of absent (False) draws per column within ONE segment."""
+    n = seg.shape[0]
     idx = np.arange(n)[:, None]
-    last_true = np.maximum.accumulate(np.where(md, idx, -1), axis=0)
+    last_true = np.maximum.accumulate(np.where(seg, idx, -1), axis=0)
     return int((idx - last_true).max())
 
 
-def _max_true_run(m: np.ndarray, seg_starts: np.ndarray) -> int:
-    """Longest presence run per column, confined to segments."""
-    ms = m.copy()
-    ms[seg_starts] = False
-    n = m.shape[0]
+def _max_run_present_in_segment(seg: np.ndarray) -> int:
+    """Longest run of present (True) draws per column within ONE segment."""
+    n = seg.shape[0]
     idx = np.arange(n)[:, None]
-    last_false = np.maximum.accumulate(np.where(~ms, idx, -1), axis=0)
+    last_false = np.maximum.accumulate(np.where(~seg, idx, -1), axis=0)
     return int((idx - last_false).max())
+
+
+def _max_run(
+    m: np.ndarray, seg_start_idx: np.ndarray, present: bool
+) -> int:
+    """Longest within-segment run per column, then max over all columns
+    and segments. Segments are evaluated independently — observations are
+    never mutated and runs can never bridge a boundary."""
+    fn = _max_run_present_in_segment if present else _max_run_absent_in_segment
+    return max(
+        fn(m[s:e]) for s, e in _segment_slices(m.shape[0], seg_start_idx)
+    )
 
 
 def history_statistics(
@@ -159,8 +173,8 @@ def history_statistics(
     out["F-S006"] = float(ov[adj_ok].sum())
 
     m = membership(mains0, matrix.main_pool)
-    out["F-S007"] = float(_max_false_run(m, seg_idx))
-    out["F-S008"] = float(_max_true_run(m, seg_idx))
+    out["F-S007"] = float(_max_run(m, seg_idx, present=False))
+    out["F-S008"] = float(_max_run(m, seg_idx, present=True))
 
     if matrix.has_special and specials is not None:
         s0 = specials - matrix.special_min

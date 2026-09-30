@@ -338,6 +338,94 @@ def test_convergence_v2_handles_integer_quantiles():
     assert check_convergence(batches).status == "CONVERGED"
 
 
+def _run_stats(mains: np.ndarray, n_pool: int, segs: list[int]) -> dict:
+    """Helper: F-S007/F-S008 for an explicit label matrix."""
+    mtx = RegimeMatrix("T", "test", mains.shape[1], 1, n_pool)
+    out = history_statistics(mains, None, mtx, segs)
+    return out["F-S007"], out["F-S008"]
+
+
+def _brute_runs(mains0: np.ndarray, n_pool: int, segs: list[int]):
+    """Deliberately simple reference: per segment, per number, per run."""
+    n = mains0.shape[0]
+    bounds = [0]
+    for L in segs:
+        bounds.append(bounds[-1] + L)
+    assert bounds[-1] == n
+    max_absent = max_present = 0
+    for s, e in zip(bounds[:-1], bounds[1:], strict=True):
+        for v in range(n_pool):
+            run_a = run_p = 0
+            for t in range(s, e):
+                hit = v in mains0[t]
+                run_a = 0 if hit else run_a + 1
+                run_p = run_p + 1 if hit else 0
+                max_absent = max(max_absent, run_a)
+                max_present = max(max_present, run_p)
+    return max_absent, max_present
+
+
+def test_drought_counts_segment_start():
+    # absent in all 3 draws of a 3-draw segment -> drought 3, not 2
+    mains = np.array([[2, 3, 4, 5, 6]] * 3)  # label 1 never drawn
+    d, _ = _run_stats(mains, 45, [3])
+    assert d == 3.0
+
+
+def test_streak_counts_segment_start():
+    # present in all 3 draws -> streak 3, not 2
+    mains = np.array([[1, 3, 4, 5, 6]] * 3)  # label 1 always drawn
+    _, s = _run_stats(mains, 45, [3])
+    assert s == 3.0
+
+
+def test_single_draw_segment_runs():
+    absent = np.array([[2, 3, 4, 5, 6]])      # 1 absent -> drought 1
+    present = np.array([[1, 3, 4, 5, 6]])     # 1 present -> streak 1
+    assert _run_stats(absent, 45, [1])[0] == 1.0
+    assert _run_stats(present, 45, [1])[1] == 1.0
+
+
+def test_run_starting_at_second_segment_start():
+    # 2 segments [2,3]; label 1 absent everywhere in segment 2 ->
+    # drought contribution 3 (not 2), starting exactly at seg 2 start
+    seg1 = np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]])          # 1 absent in row 2
+    seg2 = np.array([[6, 7, 8, 9, 10]] * 3)                       # 1 absent x3
+    d, _ = _run_stats(np.vstack([seg1, seg2]), 45, [2, 3])
+    assert d == 3.0
+    # labels 6-10 present last draw of seg1 AND all of seg2:
+    # confined streak = 3; bridging would report 4
+    _, s = _run_stats(np.vstack([seg1, seg2]), 45, [2, 3])
+    assert s == 3.0
+
+
+def test_runs_never_bridge_segments():
+    # absent run 2 | absent run 3 across a break -> max 3, not 5
+    m1 = np.array([[6, 7, 8, 9, 10]] * 2)
+    m2 = np.array([[6, 7, 8, 9, 10]] * 3)
+    d, _ = _run_stats(np.vstack([m1, m2]), 45, [2, 3])
+    assert d == 3.0
+    # present run 2 | present run 3 -> max 3, not 5
+    p1 = np.array([[1, 2, 3, 4, 5]] * 2)
+    p2 = np.array([[1, 2, 3, 4, 5]] * 3)
+    _, s = _run_stats(np.vstack([p1, p2]), 45, [2, 3])
+    assert s == 3.0
+
+
+def test_run_stats_against_brute_force():
+    rng = np.random.default_rng(42)
+    n_pool, k = 20, 4
+    for trial in range(30):
+        segs = rng.integers(1, 8, size=rng.integers(1, 4)).tolist()
+        n = sum(segs)
+        mains = np.sort(
+            np.stack([rng.choice(n_pool, k, replace=False) + 1
+                      for _ in range(n)]), axis=1)
+        got = _run_stats(mains, n_pool, segs)
+        exp = _brute_runs(mains - 1, n_pool, segs)
+        assert got == (float(exp[0]), float(exp[1])), f"trial {trial}"
+
+
 def test_ordered_draw_position_uniform():
     rng = make_rng(7, "F-E001", "test|calib|order")
     od = draw_mains_ordered(rng, PB_S07, 30_000)

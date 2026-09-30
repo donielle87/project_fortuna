@@ -1,0 +1,65 @@
+# F-E001 v3 — supersedes the rng scope documentation of F-E001.v2.yaml
+# (D-004) and retains the v2 convergence diagnostic (D-003).
+# Root seed, RNG, replicates, batches, dataset hash, and the F-S001..S013
+# statistic definitions are IDENTICAL to the frozen Commit-A design.
+# F-E001.yaml, F-E001.v2.yaml, the original preregistration, and
+# Amendment 01 remain preserved and unedited.
+experiment_id: F-E001
+phase: 2
+title: Fair-random null model and Monte Carlo baseline
+supersedes: F-E001.v2.yaml (rng scope documentation only, D-004)
+amendments:
+  - research/preregistrations/F-E001-amendment-01-convergence-se.md
+  - research/preregistrations/F-E001-amendment-02-shared-history-stream.md
+decisions: [D-003, D-004, D-005]
+
+accepted_phase1_dataset_sha256: >-
+  953c0701aeef6782a361146999ca43c1d4d2863d807c8e4dbe39cfa4108f3891
+
+rng:
+  algorithm: PCG64DXSM          # numpy.random.Generator(PCG64DXSM)
+  root_seed: 20260930
+  child_derivation: sha256-scope-v1
+  # IMPLEMENTED shared-history scope (D-004): one fair-history stream per
+  #   "<game>|<statistical_regime>|HISTORIES|batch<1..4>"
+  # All applicable catalog statistics are computed from the same replicate
+  # histories, preserving joint null dependence; each statistic still
+  # receives 20,000 iid replicates. Dedicated streams: VALIDATION,
+  # STRUCTURAL. Independent of execution order and platform.
+
+monte_carlo:
+  replicates_per_statistic_regime: 20000
+  batches: 4
+  replicates_per_batch: 5000
+  streaming: true               # statistics accumulated; raw draws not kept
+
+# Convergence (v2, D-003 — unchanged): batch vs pooled on
+# {mean, variance, q90, q95, q99}:
+#   mean/var:  |m_b - m_pool| <= max(4*sqrt(3)*se_pool, atol)
+#   quantiles: CDF-space bracket F_b(q_pool) >= p-T, F_b(q_pool-) <= p+T
+#              with T = 4*sqrt(3)*sqrt(p(1-p)/B)
+# Failure -> NOT CONVERGED (never relabeled).
+convergence:
+  version: 2
+  sigma_factor: 4.0
+  atol_rel: 0.000001
+
+# Sequential run statistics (D-005): runs are evaluated per segment
+# without mutating observations; runs beginning at a segment start count
+# their full length; runs never bridge segments.
+statistics_correction: D-005
+
+validation:
+  draws_per_regime: 200000
+  sigma_factor: 5.0
+
+eligibility:
+  draw_stream: main
+  analysis_eligible: true
+
+sequential_breaks: exclude_positions
+statistics_catalog_version: "1.0"
+
+histogram_bins:
+  integer_stats: exact
+  continuous_stats: adaptive

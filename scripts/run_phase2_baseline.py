@@ -32,7 +32,7 @@ from fortuna.simulation.structural import structural_exact, structural_simulated
 
 ROOT = Path(__file__).resolve().parent.parent
 
-CONFIG_PATH = ROOT / "config/experiments/F-E001.v2.yaml"  # D-003 supersedes v1
+CONFIG_PATH = ROOT / "config/experiments/F-E001.v3.yaml"  # effective: D-003+D-004
 PLAN_PATH = ROOT / "metadata/phase2_observation_plan.csv"
 OUT_DIR = ROOT / "data/reference/null_baselines"
 MANIFEST = "phase2_simulation_manifest.json"
@@ -226,7 +226,12 @@ def main() -> int:
         "phase2_preregistration_commit": prereg_commit,
         "simulation_code_commit": _git(["rev-parse", "HEAD"]),
         "config_file": CONFIG_PATH.name,
-        "config_supersedes": "F-E001.yaml (convergence diagnostics, D-003)",
+        "config_supersedes": "F-E001.v2.yaml (rng scope documentation, D-004)",
+        "amendments": [
+            "F-E001-amendment-01-convergence-se.md (D-003)",
+            "F-E001-amendment-02-shared-history-stream.md (D-004)",
+        ],
+        "decisions": ["D-003", "D-004", "D-005"],
         "accepted_phase1_dataset_sha256": dataset_sha,
         "root_seed": root_seed,
         "rng_algorithm": cfg["rng"]["algorithm"],
