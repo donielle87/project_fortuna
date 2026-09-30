@@ -258,3 +258,61 @@ slightly different from the prior build (11,768 draws / 11,754 eligible)
 because scientific provenance takes priority over maximum row count. No
 statistical analysis, modeling, or number generation was performed. Phase 2
 (Monte Carlo baseline) requires explicit authorization.
+
+## O. Corrective addendum — D-007 / D-008 (2026-09-30)
+
+The Phase 3 research-lead review found two upstream data-integrity
+defects in this dataset; both are corrected in the current build.
+
+### O.1 Atomic order/sequence provenance (D-007)
+
+The merge logic previously allowed `numbers_order` to be upgraded from a
+corroborating source while `main_numbers` remained the primary source's
+sequence, so a canonical row could claim `physical_draw_order` over a
+sequence that was actually sorted. The canonical schema now carries
+`number_sequence_source_id`; for every canonical draw the stored
+sequence, its order semantics, and the sequence-source ID all refer to
+the SAME staged source record.
+
+A source-level audit of preserved artifacts found that
+`SRC-WI-PB-CSV` (fetched with `dir=drawn`) serves literally
+ascending-sorted output for all of 1992-2003 and a mixed 2004 -
+backfilled data despite the parameter. The generic deterministic rule:
+a record can claim physical order only if its stored sequence is not
+literally ascending; a calendar year whose entire physical-claimed
+population is ascending is reclassified `source_sorted_order`; isolated
+ascending rows become `unknown_order`. Under the corrected build the
+order-eligible exploration population collapses where the claim was
+false (e.g. PB-S01/PB-S02 578/514 -> 0) and is unchanged where it was
+genuine (FL physical-order eras).
+
+### O.2 Evidence-based draw exclusions (D-008)
+
+`metadata/draw_exclusions.csv` records 12 canonical draws excluded as
+non-draw source artifacts on independent evidence - all sole-carried by
+`SRC-MD-*-ARCHIVE` (Maryland Lottery archive): 10 off-schedule records
+duplicating the adjacent real draw's number set, one record misdated by
+exactly one year (MM 1997-01-23; identical set appears under the valid
+Friday 1998-01-23 in `SRC-NY-MM-ARCHIVE`), and one unique-set
+off-schedule record omitted by all five authoritative sources covering
+that week (MM 2016-08-17). Every excluded draw violates the verified
+game schedule AND is unsupported by corroborating authoritative sources;
+duplicate-set rarity alone was never the basis of exclusion. The
+canonical rows are retained with `analysis_eligible=false` and reason
+`excluded_non_draw_artifact`; raw source artifacts remain immutable.
+
+For the F-E002 disputed pair 2002-06-05 / 2002-06-07 (MM-S03), the
+evidence identifies 2002-06-05 (Wednesday, off-schedule, MD-only) as the
+erroneous record - not 2002-06-07 (Friday, scheduled, corroborated by
+`SRC-NY-MM-DATA`) as the prior diagnostics assumed.
+
+### O.3 Corrected dataset accounting
+
+- Old dataset SHA-256: `953c0701aeef6782a361146999ca43c1d4d2863d807c8e4dbe39cfa4108f3891` (accepted, superseded)
+- New dataset SHA-256: `200174427b4abcc6bcc0aa3761174db237ae52e266e88cfc88bae39f27c138ff`
+- Draws: 11,768 (unchanged); analysis-eligible: 11,754 -> 11,742 (-12)
+- Eligible-count changes by statistical regime: MM-S01 171->169,
+  MM-S03 320->319, MM-S05 426->420, MM-S06 777->776,
+  PB-S06 389->388, PB-S07 1414->1413; all other regimes unchanged.
+- `build_code_commit` recorded in the manifest: the D-007/D-008 repair
+  commit.

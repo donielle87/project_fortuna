@@ -1,10 +1,11 @@
 {
   "analysis_ineligible_reason_counts": {
+    "excluded_non_draw_artifact": 12,
     "unofficial_source_only": 9,
     "unresolved_conflict": 5
   },
-  "build_code_commit": "6c0c2bb6c4abe620ababef2064415a5bc3dbd5ff",
-  "build_timestamp": "2026-09-30T14:15:14.567152+00:00",
+  "build_code_commit": "0d35623bc5b5d1939c24acab0f9482ce9d938019",
+  "build_timestamp": "2026-09-30T18:02:42.446887+00:00",
   "coverage_by_game": {
     "florida_lotto": {
       "earliest": "1988-05-07",
@@ -14,23 +15,23 @@
     },
     "mega_millions": {
       "earliest": "1996-09-06",
-      "eligible": 3060,
+      "eligible": 3050,
       "latest": "2026-09-29",
       "total": 3074
     },
     "powerball": {
       "earliest": "1992-04-22",
-      "eligible": 4662,
+      "eligible": 4660,
       "latest": "2026-09-28",
       "total": 4662
     }
   },
-  "dataset_sha256": "953c0701aeef6782a361146999ca43c1d4d2863d807c8e4dbe39cfa4108f3891",
+  "dataset_sha256": "200174427b4abcc6bcc0aa3761174db237ae52e266e88cfc88bae39f27c138ff",
   "dataset_version": "1.0.0",
   "hash_algorithm": "sha256",
   "ingestion_version": "1.0.0",
-  "num_analysis_eligible": 11754,
-  "num_analysis_ineligible": 14,
+  "num_analysis_eligible": 11742,
+  "num_analysis_ineligible": 26,
   "num_draws": 11768,
   "num_quarantined_or_rejected": 0,
   "parser_version": "1.0.0",
