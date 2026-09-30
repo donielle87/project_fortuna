@@ -1,0 +1,169 @@
+# F-E003 — Corrected Phase 3 Historical Deviation Reanalysis
+# (FROZEN before any corrected historical winning-number outcome
+# analysis). Classification: EXPLORATORY. Generates candidate hypotheses
+# only. Nothing in this experiment is confirmatory or predictive.
+#
+# Scientific design is IDENTICAL to F-E002 (same statistic definitions,
+# tails, multiplicity rules, replicate counts, RNG, promotion rule).
+# Only the inputs change: the D-007/D-008 corrected Phase 1 dataset,
+# the F-E001 v4 observation plan, and the corrected (v2) exploration
+# split. The holdout population is the FROZEN original F-E002 ID set.
+experiment_id: F-E003
+phase: 3
+title: Corrected Phase 3 Historical Deviation Reanalysis
+classification: exploratory
+corrects: F-E002 (immutable historical record, D-006/D-007/D-008)
+
+accepted_phase1_dataset_sha256: >-
+  200174427b4abcc6bcc0aa3761174db237ae52e266e88cfc88bae39f27c138ff
+accepted_phase2_commit: 91fe748a5badcee8188a4f309c732a949f8d56df
+accepted_phase2_config: F-E001.v4.yaml
+observation_plan_sha256: >-
+  8309e1dd673e339b66b1fae09d02a0f2b205a62ada2882c1590645d1bf2ac10a
+
+rng:
+  algorithm: PCG64DXSM          # numpy.random.Generator(PCG64DXSM)
+  root_seed: 20260930
+  child_derivation: sha256-scope-v1
+  # Same shared-history scope as F-E002:
+  #   "<game>|<statistical_regime>|HISTORIES|batch<1..4>"
+  # Dedicated scopes: ORDER (P3-S011 null), EQUIP|<field> (P3-S012
+  # permutation), STRUCTREF|<statistic> (structural reference pmfs).
+
+eligibility:
+  draw_stream: main
+  analysis_eligible: true
+  # upstream exclusions per metadata/draw_exclusions.csv (D-008) are
+  # already reflected in analysis_eligible; no analysis-stage exclusion.
+
+# ---------- frozen holdout + corrected exploration (METADATA ONLY) ----
+split:
+  policy: frozen_holdout_v2
+  holdout_ids_file: metadata/phase3_holdout_ids.csv      # FROZEN F-E002
+  exploration_ids_file: metadata/phase3_exploration_ids_v2.csv
+  exploration_rule: >-
+    original F-E002 exploration IDs INTERSECT corrected
+    analysis-eligible canonical draws; no original holdout ID may
+    enter exploration; the holdout is never resized.
+  seal_v1: metadata/phase3_holdout_seal.json             # historical
+  seal_v2: metadata/phase3_holdout_seal_v2.json          # corrected
+  summary_file: metadata/phase3_split_summary_v2.csv
+  randomize: false
+  outcome_inspection: false      # built from metadata columns only
+
+# ---------- Monte Carlo (exploration-matched) ----------
+monte_carlo:
+  replicates_per_statistic_regime: 20000   # primary + history secondary
+  batches: 4
+  replicates_per_batch: 5000
+  streaming: true
+  equipment_permutations: 10000
+  equipment_permutation_batches: 4
+  structural_reference_draws: 200000
+
+# ---------- convergence (same accepted v2 diagnostic as F-E001) -------
+convergence:
+  version: 2
+  sigma_factor: 4.0
+  atol_rel: 0.000001
+
+# ---------- PRIMARY family: frozen F-S001..S013 on exploration --------
+primary:
+  statistics_catalog_version: "1.0"
+  expected_test_count: 202
+  tails:
+    F-S001: upper
+    F-S002: upper
+    F-S003: upper
+    F-S004: lower
+    F-S005: upper
+    F-S006: two-sided
+    F-S007: upper
+    F-S008: upper
+    F-S009: upper
+    F-S010: upper
+    F-S011: two-sided
+    F-S012: two-sided
+    F-S013: two-sided
+  pvalue_correction: "(b+1)/(B+1)"
+  family_bh_q: 0.10        # exploratory FDR flag threshold
+  family_holm_alpha: 0.05  # reported FWER-adjusted level
+
+# ---------- SECONDARY family (Phase-3-declared statistics) ------------
+secondary:
+  triple:
+    statistic_id: P3-S001
+    tail: upper
+  lagged_overlap:
+    statistic_id: P3-S002
+    lags: [1, 2, 3, 4, 5]
+    tail: upper
+  terminal_drought:
+    statistic_id: P3-S003
+    tail: upper
+  rolling_scan:
+    statistic_id: P3-S004
+    windows: [50, 100, 250]
+    tail: upper
+  structural:
+    discrepancy: cvm_ref_weighted
+    tests:
+      P3-S005: draw_sum            # exact pmf
+      P3-S006: range               # exact pmf
+      P3-S007: adjacent_pair_count # simulated reference pmf
+      P3-S008: min_spacing         # simulated reference pmf
+      P3-S009: max_spacing         # simulated reference pmf
+      P3-S010: odd_count           # exact pmf
+    tail: upper
+  # P3-S011 physical-position frequency omnibus (upper): positions
+  # j=1..K on canonical physical_draw_order records ONLY, where the
+  # stored sequence, its label, and number_sequence_source_id are atomic
+  # (D-007). N/A when the regime has fewer than min_order_draws
+  # physical-order exploration draws. Sorted/unknown never substituted.
+  physical_order:
+    statistic_id: P3-S011
+    min_order_draws: 100
+    tail: upper
+  equipment:
+    statistic_id: P3-S012
+    fields: [machine_id, ball_set_id]
+    min_categories: 3
+    min_draws_per_category: 20
+    min_total_draws: 200
+    time_block: calendar_year
+    tail: upper
+  family_bh_q: 0.10
+  family_holm_alpha: 0.05
+
+# ---------- artifact adjudication standard (D-008, corrected) ---------
+artifact_adjudication:
+  basis: metadata/draw_exclusions.csv     # sole upstream basis
+  rule: >-
+    A canonical record is a confirmed artifact only on independent
+    schedule/source/provenance evidence recorded in the ledger or a
+    decision-log entry. Duplicate-set rarity under the fair null is
+    NEVER sufficient. The F-E002 'remove duplicate overlap and replace
+    with expected overlap' operation is prohibited; statistics are
+    recomputed normally on the corrected data.
+
+# ---------- promotion rule (candidate hypothesis requires BOTH) -------
+promotion:
+  bh_q_max: 0.10
+  abs_z_min: 2.5            # |obs - null_mean| / null_sd, null_sd > 0
+
+# ---------- anomaly flagging ----------
+anomaly_flags:
+  raw_p: 0.05
+  bh_q: 0.10
+  holm: 0.05
+
+# ---------- outputs ----------
+outputs_dir: data/analysis/phase3_corrected
+
+prohibited:
+  - predictive_models
+  - number_rankings
+  - candidate_pools
+  - ticket_generation
+  - holdout_outcome_analysis
+  - pooling_incompatible_regimes
