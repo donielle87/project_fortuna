@@ -1,6 +1,10 @@
 {
-  "build_timestamp": "2026-09-30T12:57:00.041488+00:00",
-  "code_commit": "6f9b92c470a71b5845e91bb1e7420f2253486efe",
+  "analysis_ineligible_reason_counts": {
+    "unofficial_source_only": 9,
+    "unresolved_conflict": 5
+  },
+  "build_code_commit": "6c0c2bb6c4abe620ababef2064415a5bc3dbd5ff",
+  "build_timestamp": "2026-09-30T14:15:14.567152+00:00",
   "coverage_by_game": {
     "florida_lotto": {
       "earliest": "1988-05-07",
@@ -10,23 +14,24 @@
     },
     "mega_millions": {
       "earliest": "1996-09-06",
-      "eligible": 3062,
+      "eligible": 3060,
       "latest": "2026-09-29",
-      "total": 3064
+      "total": 3074
     },
     "powerball": {
       "earliest": "1992-04-22",
-      "eligible": 4660,
+      "eligible": 4662,
       "latest": "2026-09-28",
-      "total": 4660
+      "total": 4662
     }
   },
-  "dataset_sha256": "9dd19bbbf51936e68e6a2529a2a3b476ad832628be50c2f03bd62dbfe2499645",
+  "dataset_sha256": "953c0701aeef6782a361146999ca43c1d4d2863d807c8e4dbe39cfa4108f3891",
   "dataset_version": "1.0.0",
   "hash_algorithm": "sha256",
   "ingestion_version": "1.0.0",
   "num_analysis_eligible": 11754,
-  "num_draws": 11756,
+  "num_analysis_ineligible": 14,
+  "num_draws": 11768,
   "num_quarantined_or_rejected": 0,
   "parser_version": "1.0.0",
   "source_artifact_sha256": {
@@ -46,28 +51,51 @@
       "3b1cc728e92298ef80f232cf5c86eeb9d9db98707c4ff4640257cf77928d1d94"
     ],
     "SRC-FL-LOTTO-HIST-PDF": [
-      "ad02bc1838d766fa361a0ca983e19a1cd22320947122c0f72e31bab33d26c768"
+      "ad02bc1838d766fa361a0ca983e19a1cd22320947122c0f72e31bab33d26c768",
+      "f03d98f3eedd4a9e305a2a9b24eb0f0df263b4399c998d9a0fda181870bd4c03"
     ],
     "SRC-FL-LOTTO-RULES": [
       "c61b387740322e84eeea7848001a06ca0081ddc0954d4570267095545ea6a7e0"
     ],
     "SRC-FL-MM-HIST-PDF": [
+      "f273d7cc297e61862613c08ac3111ed10fda55d5ec8f2791ab89e6cae32f8e12",
       "fdaeb9c025776d1f7c0282fe31bca8ef6e61618624f99b38204ff13ccbb467c3"
     ],
     "SRC-FL-OVERVIEW": [
       "d932ca1d8565bfb1c7e4dbcaa5ae6bf83944ce64d3c8461c575baed0cbc56f47"
     ],
     "SRC-FL-PB-HIST-PDF": [
-      "68c4e9135603f085a950c2b983c6eda8b4d031d03f924dd82a650f27f61149dd"
+      "68c4e9135603f085a950c2b983c6eda8b4d031d03f924dd82a650f27f61149dd",
+      "fd50cb60f6edf9d67ffcfa7c604eb9039f94430e6afba2b0a194b01c8b576ef1"
     ],
     "SRC-FL-WINNING-NUMBERS": [
       "7c9374915835572627c8fe1be16125b5888d5a2220feb0877073bc80f9db69cd"
+    ],
+    "SRC-MD-MM-ARCHIVE": [
+      "3d7d8ebb443a454c216362bb8fadf9015484887470d31c1678323638f569b092"
+    ],
+    "SRC-MD-PB-ARCHIVE": [
+      "01ea520a93c86515857dab4b069871dedd952bb5b5372530e84137c26611f411"
+    ],
+    "SRC-MM-2022-CORRECTION": [
+      "947e07af52ef9c705bf3ab610962498ed57528dfa5bbdc1b76854d68f96215e1"
     ],
     "SRC-MM-2025-PR": [
       "e8b9d126b9464ebe9efa48183344fe0b5a68324e8835d41fa92490d24a764c3e"
     ],
     "SRC-MM-ABOUT": [
       "c93617c14cf62340e337fec125f0211cfdba9a9aedf8fd51a0b80e5030b0cd32"
+    ],
+    "SRC-MM-COM-API": [
+      "087aa709a7ffda96d0bbfff2a23b97c95f1db51a8f20277ae0e4ece9ee2484f1",
+      "09381b406b08dbc6202448a20f442eefc19e0abdab74ce1b9d74297df5f9c348",
+      "0b41cfb64c82b3aac158174959833393e592bd039424b19fb8351961472f2cc6",
+      "48dddb34356b61dd340b7e3165e923e2ccba98bd965061fa232924703dad5c6a",
+      "4ca485b5fadeca0977f500df050260e9e8597ec18ffd88b751e7fead6c77d214",
+      "5dd101987a07b331f2f83d9dce4c82d5b80bac358a14098114b4b722ffc3fab8",
+      "ec9f0c99f85c9b521cc1492e71eae31d6ab1fcc019446eb68d0f1f1288cef48d",
+      "fb51ea446d3ea6c5ee130bbb84d276739b2872cd0798db1feee1c2536ef1f175",
+      "fcb11925db765c255407c66056742ddfbe897cdc49d6ece0b9aea0fa4a10cc6f"
     ],
     "SRC-MM-FL-53ER13-32": [
       "ae7f378d60c1932d7e4392872f60f7b0cdcc692ed68c21431b52ad06277d88a2"
@@ -94,6 +122,7 @@
       "1459de611932094be25bf0100d754662eedfdef75700ee6841a829dec01f2d6a"
     ],
     "SRC-MO-PB-XLSX": [
+      "4eb0b62592c28b698009999e318eedb6bd926621e7098e1bec1da8112507451b",
       "b0b00aab3d8bcf0b98bb1a562688ae93b495702c0f34159f46865f6639551185"
     ],
     "SRC-NY-MM-ARCHIVE": [
@@ -130,6 +159,7 @@
       "dcb37ccefd16c93091b43c6e894317577fdfc9fbcbabdf006121fc78fcf054ee"
     ],
     "SRC-NY-MM-DATA": [
+      "0c2255c686c60d87b4b057b3a0c1dc4d3db213338d74369595f85590e23b4f21",
       "291f2202844c64662620377a26fa8b8d0d743425695f460fba402efc2ba9b6c2",
       "f6217f5f0fa0dca1b4fa2a38049f02b1838fd54a7c3823fcbdd45cd1b926cdcf"
     ],
@@ -174,6 +204,9 @@
       "eb4f70e8c02d78d598372f33bdd524ab8c880e1014c81845dea7b8b4988cad98",
       "f68e972c21b6d0a050a69a04afab9635ec7ef5f938650c6ca8045f922ca3dedd"
     ],
+    "SRC-PB-COM-DRAWRESULT": [
+      "1571c65d27c4e828cf00a90526469bfb35908b8af43d968e97dbc130aeb7b45c"
+    ],
     "SRC-PB-FL-53ER08-84": [
       "0a4c52b8ba0e7f96e9f1f1711c3f9b018564939bf89c21caf4f9b1d0a01e68c5"
     ],
@@ -202,10 +235,14 @@
       "b29bbcdd76dd5d12ea18f95001876860423ede2d9a5cd6cd71535f1c4536f90a"
     ],
     "SRC-TX-MM-CSV": [
-      "4ff3abf4ca67957fc6a8c5b79c95a0c5013a1ccbfb59468dccf9615a439bd515"
+      "4ff3abf4ca67957fc6a8c5b79c95a0c5013a1ccbfb59468dccf9615a439bd515",
+      "910355727250925284387a74ea00587f52ccd7754bccd37f372301132993f8f5"
     ],
     "SRC-TX-PB-CSV": [
       "8e769eebd6af416a74790715547d1f01493a46986f0e3e7c1469d23835212047"
+    ],
+    "SRC-WI-PB-CSV": [
+      "ef1e715eff0b5bfe2be560e76494e62b3f04f5a43746de8d71f24bb8aab88469"
     ]
   }
 }
