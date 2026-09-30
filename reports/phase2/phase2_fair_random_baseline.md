@@ -135,7 +135,7 @@ regenerates all 16 probes and verifies every hash.
 |---|---|
 | phase2_preregistration_commit | `2b4381a5945313ef99f00c8f8df2faeec933fce9` |
 | simulation code commit | `e43fbd8397d7f7a067dc2b0640ce07f9fc47192e` |
-| outputs/report commit | (recorded at final commit) |
+| outputs/report commit | HEAD (this commit; see git log) |
 
 ## O. Recommendation
 
