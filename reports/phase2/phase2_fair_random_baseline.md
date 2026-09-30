@@ -1,9 +1,48 @@
 # PHASE 2 REPORT — FAIR-RANDOM NULL MODEL AND MONTE CARLO BASELINE (F-E001)
 
-**Status:** COMPLETE. Reference baselines generated, validated, converged.
+**Status:** COMPLETE after corrective gate. Reference baselines
+regenerated under corrected F-S007/F-S008 implementation and governed
+shared-history streams; validated and converged.
 **Scope discipline:** zero historical winning-number outcomes were read or
 analyzed; the only historical input was the metadata-only observation plan
 (counts, eligibility, segment structure).
+
+## Corrective-gate history (honest record)
+
+The research lead audited commit `f7ccf64` and found two issues before
+any Phase 3 work:
+
+### F-S007/F-S008 IMPLEMENTATION CORRECTION (D-005)
+
+The preregistered definitions were and remain correct: longest
+within-segment absent/present run per number. The first implementation
+of `_max_false_run`/`_max_true_run` overwrote the first position of each
+segment with a boundary sentinel, so a run beginning exactly at a segment
+start was shortened by one and a length-1 segment could report 0. The
+implementation — not the definition — was wrong. `statistics.py` now
+evaluates each segment independently without mutating observations.
+Regression tests prove segment-start counting, length-1 segments,
+non-bridging, and agreement with a brute-force reference. Baselines were
+regenerated; only F-S007/F-S008 rows changed (31 of 32 rows; FL-S02
+F-S008 is bitwise identical — single segment, and no replicate's maximum
+streak began at draw 0).
+
+### SHARED-HISTORY STREAM GOVERNANCE AMENDMENT (D-004)
+
+The frozen F-E001 text described child streams scoped by
+`game|statistical_regime|statistic_id|batch`. The implementation uses one
+shared fair-history stream per `game|statistical_regime|HISTORIES|batch`,
+computing all statistics from the same replicate histories. This was not
+in the original preregistration text and is now formally governed by
+Amendment 02 + config `F-E001.v3.yaml`: statistically valid (each
+statistic still gets 20,000 iid replicates with the correct marginal
+null) and preferable (preserves joint null dependence across statistics).
+No marginal statistic value depends on this choice.
+
+### Convergence SE amendment (D-003, earlier)
+
+See `F-E001-amendment-01-convergence-se.md`: batch-vs-pooled diagnostic
+SE corrected (√3·SE_pool; CDF-space quantile brackets). Diagnostic only.
 
 ## A. Null model
 
@@ -26,6 +65,11 @@ alternatives are out of scope.
   `F-E001-amendment-01-convergence-se.md` + `config/experiments/F-E001.v2.yaml`.
   Diagnostic-only change; generated draws and statistic values unchanged
   (determinism probes re-verified identical draws).
+- Amendment (D-004): shared HISTORIES child-scope documented post-hoc via
+  `F-E001-amendment-02-shared-history-stream.md` + `config/experiments/F-E001.v3.yaml`.
+  Effective config is now F-E001.v3.yaml.
+- Defect (D-005): F-S007/F-S008 segment-start undercount; implementation
+  corrected, baselines regenerated.
 
 ## C. Accepted input
 
@@ -125,7 +169,7 @@ regenerates all 16 probes and verifies every hash.
 
 ## M. Test results
 
-- `pytest`: 162 passed
+- `pytest`: 168 passed (includes segment-run regression tests)
 - `ruff check src scripts tests`: clean
 - `verify_phase0.py`: PASS; `verify_phase1.py`: PASS; `verify_phase2.py`: PASS
 
@@ -134,8 +178,10 @@ regenerates all 16 probes and verifies every hash.
 | field | value |
 |---|---|
 | phase2_preregistration_commit | `2b4381a5945313ef99f00c8f8df2faeec933fce9` |
-| simulation code commit | `e43fbd8397d7f7a067dc2b0640ce07f9fc47192e` |
-| outputs/report commit | HEAD (this commit; see git log) |
+| original simulation code commit | `e43fbd8397d7f7a067dc2b0640ce07f9fc47192e` |
+| corrective code commit (D-004/D-005) | `211f938db4a4ddc7440183dca15ff7768039f49c` |
+| effective config | `config/experiments/F-E001.v3.yaml` |
+| corrected outputs/report commit | HEAD (this commit; see git log) |
 
 ## O. Recommendation
 
