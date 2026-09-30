@@ -332,14 +332,58 @@ def main() -> int:
         ok = row is not None and float(row["bh_q"]) <= prom["bh_q_max"] \
             and abs(float(row["z"])) >= prom["abs_z_min"]
         check(ok, f"{h['hypothesis_id']} meets promotion rule")
-    # every qualifying flag is promoted (no selective suppression)
+    # every qualifying flag is either promoted or artifact-explained in
+    # the diagnostics file (deterministic adjudication, no silent drops)
     qualifying = {
         (r["statistical_regime_id"], r["statistic_id"])
         for r in prim_p + sec
         if r["bh_flag"] == "True" and abs(float(r["z"])) >= prom["abs_z_min"]
     }
     promoted = {(h["statistical_regime"], h["test_statistic"]) for h in hyps}
-    check(qualifying == promoted, "promoted set == qualifying set")
+    adj = _read(OUT / "phase3_artifact_diagnostics.csv")
+    explained = {
+        (r["statistical_regime_id"], r["affected_statistics"])
+        for r in adj
+        if r["artifact"] == "flag_adjudication" and "EXPLAINED" in r["detail"]
+    }
+    check(
+        qualifying == promoted | explained,
+        f"qualifying flags all adjudicated "
+        f"(qual={len(qualifying)} prom={len(promoted)} expl={len(explained)})",
+    )
+    check(
+        not (promoted - qualifying),
+        "no hypothesis promoted outside qualifying set",
+    )
+    # artifact claims are verifiable: mislabeled order rows are sorted
+    import numpy as _np
+
+    from fortuna.analysis.loader import load_exploration_histories
+    from fortuna.schemas.csv_io import load_csv as _lc
+    from fortuna.schemas.regimes import GameRegime as _GR
+
+    _regs = _lc(META / "game_regimes.csv", _GR)
+    _stat_of = {r.regime_id: r.statistical_regime_id for r in _regs}
+    _hists = load_exploration_histories(
+        ROOT / "data/processed/draws.csv",
+        ROOT / "data/processed/draw_numbers.csv", expl_ids, _stat_of,
+    )
+    for r in adj:
+        if r["artifact"] == "position_semantics_mislabeled":
+            sid = r["statistical_regime_id"]
+            ords = _np.array([
+                _hists[sid].physical_order[d]
+                for d in sorted(_hists[sid].physical_order)
+            ])
+            frac = float((_np.diff(ords, axis=1) > 0).all(axis=1).mean())
+            check(frac > 0.5, f"{sid} order-semantics artifact verified")
+        elif r["artifact"] == "phantom_duplicate_record":
+            sid = r["statistical_regime_id"]
+            mains = [d.mains for d in _hists[sid].draws]
+            has_dup = any(
+                mains[i] == mains[i - 1] for i in range(1, len(mains))
+            )
+            check(has_dup, f"{sid} phantom duplicate verified")
 
     # ---- terminology / prohibited products --------------------------------
     banned_files = [

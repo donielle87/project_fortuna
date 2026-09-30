@@ -484,18 +484,148 @@ def main() -> int:
         row["bh_flag"] = bool(sec_bh["rejected"][i])
         sec_p_rows.append(row)
 
+    # ---------------- artifact adjudication -----------------------------
+    # Deterministic verification, not statistical judgment: a flag is
+    # artifact-explained only when the anomalous contribution provably
+    # resides in corrupt records.
+    #   DQ-1 position semantics: a "physical_draw_order" population that
+    #   is majority literally-ascending is provably mislabeled (a fair
+    #   physical sequence is sorted with prob ~1/K! per draw).
+    #   DQ-2 phantom records: two consecutive exploration draws sharing an
+    #   identical main set are corrupt with probability ~1 (chance prob
+    #   ~1/C(N,K) per pair); the phantom pair's overlap contribution is
+    #   removed and replaced by its expected value to test explanation.
+    artifact_rows = []
+    artifact_explained: dict[tuple[str, str], str] = {}
+    phantom_by_regime: dict[str, list[int]] = {}
+    sorted_frac_by_regime: dict[str, float] = {}
+    for sid in sorted(matrices):
+        m = matrices[sid]
+        h = histories[sid]
+        # DQ-1
+        ords = np.array(
+            [h.physical_order[d] for d in sorted(h.physical_order)]
+        ) if h.physical_order else np.empty((0, m.main_count), dtype=int)
+        if len(ords):
+            frac = float(
+                (np.diff(ords, axis=1) > 0).all(axis=1).mean()
+            )
+            sorted_frac_by_regime[sid] = frac
+            if frac > 0.5:
+                artifact_rows.append({
+                    "artifact": "position_semantics_mislabeled",
+                    "statistical_regime_id": sid,
+                    "detail": (
+                        f"{frac:.1%} of {len(ords)} physical-labeled "
+                        "exploration records are literally "
+                        "ascending-sorted; physical order cannot be "
+                        "distinguished from sorted order for these "
+                        "records"
+                    ),
+                    "affected_statistics": "P3-S011",
+                })
+        # DQ-2
+        ph = []
+        prev = None
+        for i, d in enumerate(h.draws):
+            if prev is not None and d.mains == prev.mains:
+                ph.append(i)
+                artifact_rows.append({
+                    "artifact": "phantom_duplicate_record",
+                    "statistical_regime_id": sid,
+                    "detail": (
+                        f"{d.draw_id} ({d.draw_date}) repeats identical "
+                        f"main set {list(d.mains)} of previous draw "
+                        f"{prev.draw_id} ({prev.draw_date})"
+                    ),
+                    "affected_statistics": "F-S006,P3-S002",
+                })
+            prev = d
+        if ph:
+            phantom_by_regime[sid] = ph
+
+    qualifying = []
+    for row in prim_p_rows + sec_p_rows:
+        if row["bh_flag"] and abs(row["z"]) >= cfg["promotion"]["abs_z_min"]:
+            qualifying.append(row)
+
+    for row in qualifying:
+        sid, stat_id = row["statistical_regime_id"], row["statistic_id"]
+        m = matrices[sid]
+        srow = split_rows[sid]
+        seg_lengths = [
+            int(x) for x in srow["exploration_segment_lengths"].split(";")
+        ]
+        key = (sid, stat_id.split(":")[0])
+        if stat_id == "P3-S011" and \
+                sorted_frac_by_regime.get(sid, 0.0) > 0.5:
+            artifact_explained[key] = (
+                "position-semantics mislabeling (majority-sorted "
+                "'physical' records)"
+            )
+            continue
+        if stat_id in ("F-S006", "P3-S002") and sid in phantom_by_regime:
+            ov_mu, ov_var = overlap_mv[sid]
+            h = histories[sid]
+            mains = np.array([d.mains for d in h.draws], dtype=np.int64)
+            ph_idx = phantom_by_regime[sid]
+            # overlap of phantom pairs removed -> expected value
+            k_ = m.main_count
+            if stat_id == "F-S006":
+                obs_adj = row["observed"] - len(ph_idx) * (
+                    k_ - ov_mu
+                )
+            else:
+                lag_res = secondary.lagged_overlap_scan(
+                    mains - m.main_min, seg_lengths, lags, ov_mu, ov_var
+                )
+                s1 = lag_res[1]
+                s1_adj = s1["aggregate"] - len(ph_idx) * (k_ - ov_mu)
+                z1_adj = abs(
+                    (s1_adj - s1["n_pairs"] * ov_mu)
+                    / math.sqrt(s1["n_pairs"] * ov_var)
+                )
+                others = [
+                    abs(v["z"]) for lag2, v in lag_res.items() if lag2 != 1
+                ]
+                obs_adj = max([z1_adj, *others])
+            vals = null[(sid, stat_id)]
+            z_adj = (obs_adj - vals.mean()) / max(vals.std(), 1e-12)
+            if abs(z_adj) < cfg["promotion"]["abs_z_min"]:
+                artifact_explained[key] = (
+                    f"phantom duplicate records ({len(ph_idx)} identical "
+                    f"consecutive pairs); phantom-adjusted z={z_adj:.2f}"
+                )
+
+    for row in qualifying:
+        sid, stat_id = row["statistical_regime_id"], row["statistic_id"]
+        key = (sid, stat_id.split(":")[0])
+        if key in artifact_explained:
+            detail = (
+                f"{stat_id} BH-flagged (z={row['z']:.2f}, "
+                f"q={row['bh_q']:.4f}) -> EXPLAINED by "
+                f"{artifact_explained[key]}"
+            )
+        else:
+            detail = (
+                f"{stat_id} BH-flagged (z={row['z']:.2f}, "
+                f"q={row['bh_q']:.4f}) -> promoted to candidate"
+            )
+        artifact_rows.append({
+            "artifact": "flag_adjudication",
+            "statistical_regime_id": sid,
+            "detail": detail,
+            "affected_statistics": stat_id,
+        })
+
     # ---------------- candidate hypotheses ------------------------------
-    prom = cfg["promotion"]
     hyp_rows = []
-    candidates = []
-    for row in prim_p_rows:
-        if row["bh_flag"] and abs(row["z"]) >= prom["abs_z_min"]:
-            candidates.append((row["statistical_regime_id"],
-                               row["statistic_id"], row))
-    for row in sec_p_rows:
-        if row["bh_flag"] and abs(row["z"]) >= prom["abs_z_min"]:
-            candidates.append((row["statistical_regime_id"],
-                               row["statistic_id"], row))
+    candidates = [
+        (row["statistical_regime_id"], row["statistic_id"], row)
+        for row in qualifying
+        if (row["statistical_regime_id"], row["statistic_id"].split(":")[0])
+        not in artifact_explained
+    ]
     for j, (sid, stat_id, row) in enumerate(candidates, 1):
         srow = split_rows[sid]
         hyp_rows.append({
@@ -567,6 +697,13 @@ def main() -> int:
     _write_csv(OUT / "phase3_equipment_diagnostics.csv", equip_rows)
     _write_csv(OUT / "phase3_secondary_pvalues.csv", sec_p_rows)
     _write_csv(
+        OUT / "phase3_artifact_diagnostics.csv", artifact_rows,
+        fieldnames=[
+            "artifact", "statistical_regime_id", "detail",
+            "affected_statistics",
+        ],
+    )
+    _write_csv(
         OUT / "phase3_candidate_hypotheses.csv", hyp_rows,
         fieldnames=[
             "hypothesis_id", "date", "source_experiment", "status",
@@ -618,6 +755,8 @@ def main() -> int:
         "bh_threshold": cfg["primary"]["family_bh_q"],
         "holm_threshold": cfg["primary"]["family_holm_alpha"],
         "effect_size_threshold": cfg["promotion"]["abs_z_min"],
+        "candidate_hypotheses": len(hyp_rows),
+        "flags_artifact_explained": len(artifact_explained),
         "convergence_status": (
             "NOT CONVERGED" if any(
                 v == "NOT CONVERGED" for v in conv_status.values()
