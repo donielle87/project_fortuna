@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Secrets / local environment — NEVER commit real .env files
+.env
+.env.*
+!.env.example
+
+# OS / editor
+Thumbs.db
+.DS_Store
+*.swp
+
+# NOTE: data/raw/ is intentionally NOT ignored.
+# Raw retrieved source artifacts are version-controlled for provenance.

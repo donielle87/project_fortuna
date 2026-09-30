@@ -1,0 +1,12 @@
+game_id: florida_lotto
+name: Florida Lotto
+operator: Florida Lottery
+current_regime_id: FL-R004
+current_statistical_regime_id: FL-S02
+draw_source_ids:
+  - DS-FL-LOTTO-HIST
+  - DS-FL-WINNUM
+notes: >-
+  Full history 1988-05-07 to present covered by the official PDF archive
+  (DS-FL-LOTTO-HIST). LOTTO DP (Double Play) rows in that archive are a
+  separate draw stream and must not be pooled with main draws.

@@ -1,0 +1,12 @@
+game_id: powerball
+name: Powerball
+operator: Multi-State Lottery Association (MUSL)
+current_regime_id: PB-R010
+current_statistical_regime_id: PB-S07
+draw_source_ids:
+  - DS-PB-NY
+  - DS-PB-FL
+notes: >-
+  Rules of record live in metadata/game_regimes.csv. Drawings at Florida
+  Lottery Draw Studio, Tallahassee (10:59 ET Mon/Wed/Sat). Pre-2010 winning
+  numbers have no located official machine-readable archive (DS-PB-EARLY-GAP).

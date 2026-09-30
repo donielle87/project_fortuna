@@ -1,0 +1,425 @@
+{
+  "id" : "d6yy-54nr",
+  "name" : "Lottery Powerball Winning Numbers: Beginning 2010",
+  "assetType" : "dataset",
+  "attribution" : "New York State Gaming Commission",
+  "attributionLink" : "http://nylottery.ny.gov/wps/portal/Home/Lottery/home/your+lottery/drawing+results/drawingresults_powerball",
+  "averageRating" : 0,
+  "category" : "Government & Finance",
+  "createdAt" : 1362178006,
+  "description" : "Go to http://on.ny.gov/1GpWiHD on the New York Lottery website for past Powerball results and payouts.",
+  "diciBackend" : false,
+  "displayType" : "table",
+  "downloadCount" : 36053240,
+  "hideFromCatalog" : false,
+  "hideFromDataJson" : false,
+  "locked" : false,
+  "newBackend" : true,
+  "numberOfComments" : 0,
+  "oid" : 42195657,
+  "provenance" : "official",
+  "publicationAppendEnabled" : false,
+  "publicationDate" : 1780587233,
+  "publicationGroup" : 708088,
+  "publicationStage" : "published",
+  "rowsUpdatedAt" : 1790667544,
+  "rowsUpdatedBy" : "xzik-pf59",
+  "tableId" : 20411188,
+  "totalTimesRated" : 0,
+  "viewCount" : 594635,
+  "viewLastModified" : 1790667543,
+  "viewType" : "tabular",
+  "approvals" : [ {
+    "reviewedAt" : 1563703321,
+    "reviewedAutomatically" : true,
+    "state" : "approved",
+    "submissionId" : 7512392,
+    "submissionObject" : "public_audience_request",
+    "submissionOutcome" : "change_audience",
+    "submittedAt" : 1563703321,
+    "targetAudience" : "public",
+    "workflowId" : 2254,
+    "submissionDetails" : {
+      "permissionType" : "READ"
+    },
+    "submissionOutcomeApplication" : {
+      "failureCount" : 0,
+      "status" : "success"
+    },
+    "submitter" : {
+      "id" : "xzik-pf59",
+      "displayName" : "NY Open Data"
+    }
+  } ],
+  "clientContext" : {
+    "clientContextVariables" : [ ],
+    "inheritedVariables" : { }
+  },
+  "columns" : [ {
+    "id" : 634672450,
+    "name" : "Draw Date",
+    "dataTypeName" : "calendar_date",
+    "description" : "Draw date",
+    "fieldName" : "draw_date",
+    "position" : 1,
+    "renderTypeName" : "calendar_date",
+    "tableColumnId" : 8275908,
+    "width" : 141,
+    "cachedContents" : {
+      "non_null" : "1999",
+      "largest" : "2026-09-28T00:00:00.000",
+      "null" : "0",
+      "top" : [ {
+        "item" : "2021-12-15T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2014-11-01T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2018-02-07T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2021-09-11T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2015-10-14T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2017-02-01T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2018-03-24T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2014-10-11T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2012-10-13T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2012-02-29T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2012-08-29T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2023-05-10T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2022-05-25T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2021-11-06T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2018-10-24T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2026-07-15T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2025-09-06T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2022-01-10T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2011-04-20T00:00:00.000",
+        "count" : "1"
+      }, {
+        "item" : "2025-11-15T00:00:00.000",
+        "count" : "1"
+      } ],
+      "smallest" : "2010-02-03T00:00:00.000",
+      "count" : "1999",
+      "cardinality" : "1999"
+    },
+    "format" : {
+      "view" : "date",
+      "align" : "center"
+    }
+  }, {
+    "id" : 634672451,
+    "name" : "Winning Numbers",
+    "dataTypeName" : "text",
+    "description" : "Winning numbers",
+    "fieldName" : "winning_numbers",
+    "position" : 2,
+    "renderTypeName" : "text",
+    "tableColumnId" : 8275909,
+    "width" : 186,
+    "cachedContents" : {
+      "non_null" : "1999",
+      "largest" : "52 58 59 64 66 09",
+      "null" : "0",
+      "top" : [ {
+        "item" : "09 29 40 44 54 07",
+        "count" : "1"
+      }, {
+        "item" : "10 11 26 27 34 07",
+        "count" : "1"
+      }, {
+        "item" : "02 07 16 20 46 34",
+        "count" : "1"
+      }, {
+        "item" : "03 23 31 34 47 13",
+        "count" : "1"
+      }, {
+        "item" : "05 07 09 23 32 26",
+        "count" : "1"
+      }, {
+        "item" : "02 24 28 32 59 25",
+        "count" : "1"
+      }, {
+        "item" : "01 20 22 60 66 03",
+        "count" : "1"
+      }, {
+        "item" : "03 18 25 32 51 03",
+        "count" : "1"
+      }, {
+        "item" : "04 20 34 39 58 31",
+        "count" : "1"
+      }, {
+        "item" : "27 28 51 68 69 22",
+        "count" : "1"
+      }, {
+        "item" : "06 34 40 46 58 06",
+        "count" : "1"
+      }, {
+        "item" : "11 22 24 51 60 18",
+        "count" : "1"
+      }, {
+        "item" : "09 10 36 46 52 14",
+        "count" : "1"
+      }, {
+        "item" : "12 26 44 46 47 29",
+        "count" : "1"
+      }, {
+        "item" : "29 30 32 48 50 20",
+        "count" : "1"
+      }, {
+        "item" : "07 08 19 26 36 15",
+        "count" : "1"
+      }, {
+        "item" : "03 10 29 58 64 14",
+        "count" : "1"
+      }, {
+        "item" : "21 35 46 47 50 02",
+        "count" : "1"
+      }, {
+        "item" : "17 36 43 53 67 14",
+        "count" : "1"
+      }, {
+        "item" : "07 08 17 48 59 09",
+        "count" : "1"
+      } ],
+      "smallest" : "01 02 03 07 39 25",
+      "count" : "1999",
+      "cardinality" : "1999"
+    },
+    "format" : {
+      "align" : "center"
+    }
+  }, {
+    "id" : 634672452,
+    "name" : "Multiplier",
+    "dataTypeName" : "number",
+    "description" : "Multiplier",
+    "fieldName" : "multiplier",
+    "position" : 3,
+    "renderTypeName" : "number",
+    "tableColumnId" : 8275910,
+    "width" : 136,
+    "cachedContents" : {
+      "non_null" : "1789",
+      "largest" : "10",
+      "null" : "210",
+      "top" : [ {
+        "item" : "2",
+        "count" : "939"
+      }, {
+        "item" : "3",
+        "count" : "547"
+      }, {
+        "item" : "4",
+        "count" : "167"
+      }, {
+        "item" : "5",
+        "count" : "115"
+      }, {
+        "item" : "10",
+        "count" : "21"
+      } ],
+      "smallest" : "2",
+      "count" : "1999",
+      "cardinality" : "1999"
+    },
+    "format" : {
+      "precisionStyle" : "standard",
+      "noCommas" : "false",
+      "align" : "center"
+    }
+  }, {
+    "id" : 634672454,
+    "name" : "double_play_winning_numbers",
+    "dataTypeName" : "text",
+    "description" : "Double Play winning numbers (Six numbers, each two digits, separated by a space: xx xx xx xx xx xx)",
+    "fieldName" : "double_play_winning_numbers",
+    "position" : 4,
+    "renderTypeName" : "text",
+    "tableColumnId" : 168354819,
+    "cachedContents" : {
+      "non_null" : "51",
+      "largest" : "32 33 58 62 69 18",
+      "null" : "1948",
+      "top" : [ {
+        "item" : "01 17 31 39 43 22",
+        "count" : "1"
+      }, {
+        "item" : "02 09 24 25 39 14",
+        "count" : "1"
+      }, {
+        "item" : "02 26 34 43 45 15",
+        "count" : "1"
+      }, {
+        "item" : "03 04 19 21 58 08",
+        "count" : "1"
+      }, {
+        "item" : "03 09 16 26 32 02",
+        "count" : "1"
+      }, {
+        "item" : "03 11 20 31 65 05",
+        "count" : "1"
+      }, {
+        "item" : "03 18 26 52 54 08",
+        "count" : "1"
+      }, {
+        "item" : "04 18 29 47 53 16",
+        "count" : "1"
+      }, {
+        "item" : "04 19 24 25 41 09",
+        "count" : "1"
+      }, {
+        "item" : "04 23 31 32 57 23",
+        "count" : "1"
+      }, {
+        "item" : "04 26 28 44 67 20",
+        "count" : "1"
+      }, {
+        "item" : "05 06 15 26 33 20",
+        "count" : "1"
+      }, {
+        "item" : "05 06 34 38 39 07",
+        "count" : "1"
+      }, {
+        "item" : "05 07 17 26 28 05",
+        "count" : "1"
+      }, {
+        "item" : "05 11 25 26 64 11",
+        "count" : "1"
+      }, {
+        "item" : "05 18 38 56 67 07",
+        "count" : "1"
+      }, {
+        "item" : "06 11 15 32 58 18",
+        "count" : "1"
+      }, {
+        "item" : "06 27 33 44 69 23",
+        "count" : "1"
+      }, {
+        "item" : "06 33 54 63 66 18",
+        "count" : "1"
+      }, {
+        "item" : "01 16 20 21 49 10",
+        "count" : "1"
+      } ],
+      "smallest" : "01 16 20 21 49 10",
+      "count" : "1999",
+      "cardinality" : "1999"
+    },
+    "format" : { }
+  } ],
+  "grants" : [ {
+    "inherited" : false,
+    "type" : "viewer",
+    "flags" : [ "public" ]
+  } ],
+  "metadata" : {
+    "rdfSubject" : "0",
+    "jsonQuery" : {
+      "order" : [ {
+        "columnFieldName" : "draw_date",
+        "ascending" : false
+      } ]
+    },
+    "attachments" : [ {
+      "filename" : "NYSGAM_Powerball_Overview.pdf",
+      "assetId" : "8462fb9d-a7c8-4e07-9f53-db81e06433c7",
+      "name" : "NYSGAM_Powerball_Overview.pdf"
+    }, {
+      "filename" : "NYSGAM_Powerball_DataDictionary.pdf",
+      "assetId" : "cbb55ce2-bf93-4f82-bcff-ea46053ef47e",
+      "name" : "NYSGAM_Powerball_DataDictionary.pdf"
+    } ],
+    "custom_fields" : {
+      "Dataset Summary" : {
+        "Posting Frequency" : "Three times weekly",
+        "Organization" : "The New York Lottery",
+        "Contact Information" : "Info@gaming.ny.gov",
+        "Time Period" : "02/03/2010 to present",
+        "Coverage" : "Statewide",
+        "Granularity" : "Draw Date",
+        "Dataset Owner" : "New York State Gaming Commission"
+      },
+      "Additional Resources" : {
+        "See Also " : "http://www.powerball.com/pb_home.asp",
+        "See Also" : "http://www.gaming.ny.gov/"
+      },
+      "Notes" : {
+        "Notes" : "The information contained on these pages is believed to be accurate. In the event of a discrepancy between the information displayed on this Web site concerning winning numbers and payouts and the information contained in the official and certified files maintained by the New York Lottery's Drawing Unit, those maintained by the Drawing Unit shall prevail."
+      },
+      "Dataset Information" : {
+        "Agency" : "Gaming Commission, New York State"
+      }
+    },
+    "rowIdentifier" : 634672453,
+    "availableDisplayTypes" : [ "table", "fatrow", "page" ],
+    "renderTypeConfig" : {
+      "visible" : {
+        "table" : true
+      }
+    }
+  },
+  "owner" : {
+    "id" : "xzik-pf59",
+    "displayName" : "NY Open Data",
+    "profileImageUrlLarge" : "/api/users/xzik-pf59/profile_images/LARGE",
+    "profileImageUrlMedium" : "/api/users/xzik-pf59/profile_images/THUMB",
+    "profileImageUrlSmall" : "/api/users/xzik-pf59/profile_images/TINY",
+    "screenName" : "NY Open Data",
+    "type" : "interactive",
+    "flags" : [ "acceptedEula", "mayBeStoriesCoOwner" ]
+  },
+  "query" : {
+    "orderBys" : [ {
+      "ascending" : false,
+      "expression" : {
+        "columnId" : 634672450,
+        "type" : "column"
+      }
+    } ]
+  },
+  "rights" : [ "read" ],
+  "tableAuthor" : {
+    "id" : "xzik-pf59",
+    "displayName" : "NY Open Data",
+    "profileImageUrlLarge" : "/api/users/xzik-pf59/profile_images/LARGE",
+    "profileImageUrlMedium" : "/api/users/xzik-pf59/profile_images/THUMB",
+    "profileImageUrlSmall" : "/api/users/xzik-pf59/profile_images/TINY",
+    "screenName" : "NY Open Data",
+    "type" : "interactive",
+    "flags" : [ "acceptedEula", "mayBeStoriesCoOwner" ]
+  },
+  "tags" : [ "powerball", "new york lottery", "winning", "results" ],
+  "flags" : [ "default", "ownerMayBeContacted", "restorable", "restorePossibleForType" ]
+}

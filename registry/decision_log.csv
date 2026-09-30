@@ -1,0 +1,2 @@
+decision_id,date,decided_by,decision,rationale,alternatives_considered,supersedes,notes
+D-001,2026-09-30,research lead,Adopt two-level regime model (legal regime + statistical pool group) for Phase 0,Matrix changes create incompatible pooling groups; schedule/economic changes create legal eras without splitting the statistical series. User-approved design decision.,Single-level regime model (rejected: would conflate economic changes with sampling changes),,

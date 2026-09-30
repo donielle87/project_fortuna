@@ -1,0 +1,13 @@
+game_id: mega_millions
+name: Mega Millions
+operator: Mega Millions Consortium
+current_regime_id: MM-R008
+current_statistical_regime_id: MM-S07
+draw_source_ids:
+  - DS-MM-NY
+  - DS-MM-FL
+notes: >-
+  Includes The Big Game era (1996-09-06 to 2002-05-14) as regimes MM-R001..
+  MM-R003. Rules of record live in metadata/game_regimes.csv. Big Game-era
+  winning numbers have no located official machine-readable archive
+  (DS-MM-BIGGAME-GAP).

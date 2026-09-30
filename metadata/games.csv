@@ -1,0 +1,4 @@
+game_id,name,operator,jurisdiction,launch_date,active,notes
+powerball,Powerball,Multi-State Lottery Association (MUSL),45 U.S. states + DC + Puerto Rico + U.S. Virgin Islands (incl. Florida since 2009-01),1992-04-22,true,"Replaced Lotto*America. Drawings held at Florida Lottery Draw Studio, Tallahassee since 2012-01-04."
+mega_millions,Mega Millions (The Big Game until 2002-05),Mega Millions Consortium (administered with MUSL),45 U.S. states + DC + U.S. Virgin Islands (Florida since 2013-05-15),1996-09-06,true,Began as The Big Game (6 states); renamed Mega Millions with 2002-05-17 draw.
+florida_lotto,Florida Lotto,Florida Lottery,Florida,1988-05-07,true,In-state 6-from-N jackpot game. Double Play add-on (separate second drawing) since 2020-10-10.
