@@ -1,0 +1,27 @@
+artifact,statistical_regime_id,detail,affected_statistics
+position_semantics_mislabeled,MM-S03,98.9% of 94 physical-labeled exploration records are literally ascending-sorted; physical order cannot be distinguished from sorted order for these records,P3-S011
+phantom_duplicate_record,MM-S03,"MM-D-2002-06-07 (2002-06-07) repeats identical main set [14, 22, 27, 28, 42] of previous draw MM-D-2002-06-05 (2002-06-05)","F-S006,P3-S002"
+position_semantics_mislabeled,MM-S04,99.6% of 694 physical-labeled exploration records are literally ascending-sorted; physical order cannot be distinguished from sorted order for these records,P3-S011
+position_semantics_mislabeled,MM-S05,100.0% of 334 physical-labeled exploration records are literally ascending-sorted; physical order cannot be distinguished from sorted order for these records,P3-S011
+phantom_duplicate_record,MM-S05,"MM-D-2014-01-15 (2014-01-15) repeats identical main set [4, 23, 26, 62, 69] of previous draw MM-D-2014-01-14 (2014-01-14)","F-S006,P3-S002"
+phantom_duplicate_record,MM-S05,"MM-D-2014-07-02 (2014-07-02) repeats identical main set [9, 22, 38, 47, 49] of previous draw MM-D-2014-07-01 (2014-07-01)","F-S006,P3-S002"
+phantom_duplicate_record,MM-S05,"MM-D-2014-12-13 (2014-12-13) repeats identical main set [2, 31, 46, 58, 65] of previous draw MM-D-2014-12-12 (2014-12-12)","F-S006,P3-S002"
+phantom_duplicate_record,MM-S05,"MM-D-2016-06-29 (2016-06-29) repeats identical main set [15, 17, 20, 35, 55] of previous draw MM-D-2016-06-28 (2016-06-28)","F-S006,P3-S002"
+phantom_duplicate_record,MM-S05,"MM-D-2016-11-16 (2016-11-16) repeats identical main set [9, 17, 23, 57, 71] of previous draw MM-D-2016-11-15 (2016-11-15)","F-S006,P3-S002"
+position_semantics_mislabeled,MM-S06,100.0% of 619 physical-labeled exploration records are literally ascending-sorted; physical order cannot be distinguished from sorted order for these records,P3-S011
+phantom_duplicate_record,MM-S06,"MM-D-2018-01-06 (2018-01-06) repeats identical main set [28, 30, 39, 59, 70] of previous draw MM-D-2018-01-05 (2018-01-05)","F-S006,P3-S002"
+position_semantics_mislabeled,MM-S07,100.0% of 124 physical-labeled exploration records are literally ascending-sorted; physical order cannot be distinguished from sorted order for these records,P3-S011
+position_semantics_mislabeled,PB-S01,100.0% of 462 physical-labeled exploration records are literally ascending-sorted; physical order cannot be distinguished from sorted order for these records,P3-S011
+position_semantics_mislabeled,PB-S02,100.0% of 411 physical-labeled exploration records are literally ascending-sorted; physical order cannot be distinguished from sorted order for these records,P3-S011
+position_semantics_mislabeled,PB-S03,58.9% of 241 physical-labeled exploration records are literally ascending-sorted; physical order cannot be distinguished from sorted order for these records,P3-S011
+phantom_duplicate_record,PB-S06,"PB-D-2014-04-06 (2014-04-06) repeats identical main set [11, 21, 26, 33, 34] of previous draw PB-D-2014-04-05 (2014-04-05)","F-S006,P3-S002"
+phantom_duplicate_record,PB-S07,"PB-D-2017-06-01 (2017-06-01) repeats identical main set [4, 33, 39, 46, 60] of previous draw PB-D-2017-05-31 (2017-05-31)","F-S006,P3-S002"
+flag_adjudication,MM-S05,"F-S006 BH-flagged (z=4.22, q=0.0101) -> EXPLAINED by phantom duplicate records (5 identical consecutive pairs); phantom-adjusted z=1.88",F-S006
+flag_adjudication,MM-S04,"P3-S011 BH-flagged (z=24.25, q=0.0017) -> EXPLAINED by position-semantics mislabeling (majority-sorted 'physical' records)",P3-S011
+flag_adjudication,MM-S05,"P3-S002 BH-flagged (z=4.75, q=0.0044) -> EXPLAINED by phantom duplicate records (5 identical consecutive pairs); phantom-adjusted z=0.54",P3-S002
+flag_adjudication,MM-S05,"P3-S011 BH-flagged (z=14.37, q=0.0017) -> EXPLAINED by position-semantics mislabeling (majority-sorted 'physical' records)",P3-S011
+flag_adjudication,MM-S06,"P3-S011 BH-flagged (z=22.21, q=0.0017) -> EXPLAINED by position-semantics mislabeling (majority-sorted 'physical' records)",P3-S011
+flag_adjudication,MM-S07,"P3-S011 BH-flagged (z=3.90, q=0.0962) -> EXPLAINED by position-semantics mislabeling (majority-sorted 'physical' records)",P3-S011
+flag_adjudication,PB-S01,"P3-S011 BH-flagged (z=25.23, q=0.0017) -> EXPLAINED by position-semantics mislabeling (majority-sorted 'physical' records)",P3-S011
+flag_adjudication,PB-S02,"P3-S011 BH-flagged (z=18.40, q=0.0017) -> EXPLAINED by position-semantics mislabeling (majority-sorted 'physical' records)",P3-S011
+flag_adjudication,PB-S03,"P3-S011 BH-flagged (z=3.82, q=0.0962) -> EXPLAINED by position-semantics mislabeling (majority-sorted 'physical' records)",P3-S011

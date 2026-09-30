@@ -1,0 +1,1 @@
+hypothesis_id,date,source_experiment,status,game,statistical_regime,exploration_interval,observed_phenomenon,direction,test_statistic,effect_size_z,raw_p,adjusted_q,mechanistic_rationale,alternative_explanations,confirmatory_test,holdout_population_reserved,min_confirmation_effect,failure_criterion

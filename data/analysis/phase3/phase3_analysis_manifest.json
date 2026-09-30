@@ -1,0 +1,139 @@
+{
+  "phase": 3,
+  "experiment_id": "F-E002",
+  "phase3_preregistration_commit": "2657501db7e3d8ba5f7953ac3ba02d8082db16e7",
+  "analysis_code_commit": "be2ab08f7c757f352dd66cbb3618ff978200bec3",
+  "accepted_phase1_dataset_sha256": "953c0701aeef6782a361146999ca43c1d4d2863d807c8e4dbe39cfa4108f3891",
+  "accepted_phase2_commit": "0497462993759e7bcbe236f47f7df5d7c27baa8d",
+  "exploration_manifest_sha256": "dfadc65b70dac318d1923980ed10a92fcadac1709b9317659e7b8bbd6b47b1d3",
+  "holdout_manifest_sha256": "1ad69bc101a88755db92498cc33922917cae3daa5c0b9e12d59530a607efc130",
+  "holdout_seal_sha256": "6cb7c382924c4ad55ab0958239cb488cd95b0e0b99407ebebcfe822a4b16b91c",
+  "split_policy_sha256": "39a613ca6cb33d29978f47b068413207dcb6f22c29d457be900021bdb39790b8",
+  "exploration_counts": {
+    "FL-S01": 479,
+    "FL-S02": 2248,
+    "MM-S01": 136,
+    "MM-S02": 273,
+    "MM-S03": 256,
+    "MM-S04": 695,
+    "MM-S05": 340,
+    "MM-S06": 621,
+    "MM-S07": 124,
+    "PB-S01": 462,
+    "PB-S02": 411,
+    "PB-S03": 241,
+    "PB-S04": 280,
+    "PB-S05": 252,
+    "PB-S06": 311,
+    "PB-S07": 1131
+  },
+  "holdout_counts": {
+    "FL-S01": 120,
+    "FL-S02": 562,
+    "MM-S01": 35,
+    "MM-S02": 69,
+    "MM-S03": 64,
+    "MM-S04": 174,
+    "MM-S05": 86,
+    "MM-S06": 156,
+    "MM-S07": 31,
+    "PB-S01": 116,
+    "PB-S02": 103,
+    "PB-S03": 61,
+    "PB-S04": 70,
+    "PB-S05": 64,
+    "PB-S06": 78,
+    "PB-S07": 283
+  },
+  "exploration_segment_lengths": {
+    "FL-S01": [
+      479
+    ],
+    "FL-S02": [
+      2248
+    ],
+    "MM-S01": [
+      12,
+      61,
+      1,
+      35,
+      27
+    ],
+    "MM-S02": [
+      122,
+      78,
+      10,
+      39,
+      24
+    ],
+    "MM-S03": [
+      88,
+      129,
+      8,
+      31
+    ],
+    "MM-S04": [
+      695
+    ],
+    "MM-S05": [
+      340
+    ],
+    "MM-S06": [
+      621
+    ],
+    "MM-S07": [
+      124
+    ],
+    "PB-S01": [
+      462
+    ],
+    "PB-S02": [
+      411
+    ],
+    "PB-S03": [
+      241
+    ],
+    "PB-S04": [
+      280
+    ],
+    "PB-S05": [
+      252
+    ],
+    "PB-S06": [
+      311
+    ],
+    "PB-S07": [
+      1131
+    ]
+  },
+  "root_seed": 20260930,
+  "rng_algorithm": "PCG64DXSM",
+  "primary_replicates": 20000,
+  "secondary_replicates": 20000,
+  "equipment_permutations": 10000,
+  "primary_family": "F-S001..F-S013 applicable x 16 regimes (202)",
+  "secondary_family": "P3-S001..S012 applicable across regimes (one family)",
+  "bh_threshold": 0.1,
+  "holm_threshold": 0.05,
+  "effect_size_threshold": 2.5,
+  "candidate_hypotheses": 0,
+  "flags_artifact_explained": 9,
+  "convergence_status": "CONVERGED",
+  "output_hashes": {
+    "phase3_artifact_diagnostics.csv": "c56e5221e5bdee7145805846358b96027a69f2ef9644151aa2c7ea4fa1dd1bcd",
+    "phase3_candidate_hypotheses.csv": "09196853e1fed9600c40944a41b9ad0e65fa3703689f9ee81d52c9d1e49d0d5f",
+    "phase3_equipment_diagnostics.csv": "07da6c26abbf958f4181686dc4eb6555c324bc678f3e31ccbc95861603790877",
+    "phase3_equipment_sufficiency.csv": "a8b0cf1645fd1e5656d1abb4c9f6781c1cea49dbbc2ce5b5390bf2b488ddfe4c",
+    "phase3_number_frequency_diagnostics.csv": "29da58ebe27cfba9c26e0db47e6cf54f44bb8c7b825904ec0d3f49567b5ed6b3",
+    "phase3_order_diagnostics.csv": "3d7ec064305af9f421b75e3bc64866732664ea3687e5ec5d17a179fb80b21554",
+    "phase3_pair_counts.csv": "22e6fb1740cf821d35a8d2dd6dda8278211f28703ef54ea4ad057807f9b5665d",
+    "phase3_primary_pvalues.csv": "d846372846007250a8f6bf2c1e6a7430f073bc91ddc25868b931d08ad3b276d2",
+    "phase3_primary_statistics.csv": "cb9dedd62706364fa7c0f0d958a530e23f7c283ff20d0cdab25e2bfc93f55d20",
+    "phase3_secondary_pvalues.csv": "84f666ef0b6f4be09d9eadbecf667bdb4b575f675c5f4463d13b4f323d2d0eb7",
+    "phase3_serial_diagnostics.csv": "af3f6d97ca2e9547008c8dfc71d67afd0d2e1aa6f43cf8ca41ab95ea283a9b56",
+    "phase3_special_frequency_diagnostics.csv": "63d89aa5ba91544de513deec9768fb71f5a69a47d795f2d0756a7ae32fdc9a3d",
+    "phase3_structural_diagnostics.csv": "e8a58048ab691139ec72f5b74201016953b5dcdf785d472846cf28b6b3159958",
+    "phase3_triple_diagnostics.csv": "072cf23ba7d33a7542d564a8e3f13916be0b2b1eb04b3d1f5601b0029feadc10"
+  },
+  "generated_utc": "2026-09-30T17:14:25Z"
+}
