@@ -27,6 +27,7 @@ from fortuna.ingestion.pipeline import (
     apply_eligibility,
     build_canonical,
     dataset_hash,
+    load_exclusions,
     load_resolutions,
     load_source_tiers,
     reconcile_groups,
@@ -149,6 +150,7 @@ _CODE_PATHS = (
     "metadata/source_registry.csv",
     "metadata/draw_sources.csv",
     "metadata/draw_resolutions.csv",
+    "metadata/draw_exclusions.csv",
     "metadata/game_regimes.csv",
     "metadata/raw_artifacts.csv",
 )
@@ -195,6 +197,7 @@ def build(repo_root: Path = ROOT, *, release: bool = False) -> dict:
     regimes = load_csv(repo_root / "metadata/game_regimes.csv", GameRegime)
     tiers = load_source_tiers(repo_root)
     resolutions = load_resolutions(repo_root)
+    exclusions = load_exclusions(repo_root)
 
     staged = parse_artifacts(artifacts)
     groups, recon_rows = reconcile_groups(staged, tiers)
@@ -203,7 +206,9 @@ def build(repo_root: Path = ROOT, *, release: bool = False) -> dict:
         groups, regimes, tiers, resolutions
     )
     violations = structural_validate(draws, regimes)
-    ineligible_reasons = apply_eligibility(draws, conflict_keys, regimes, tiers)
+    ineligible_reasons = apply_eligibility(
+        draws, conflict_keys, regimes, tiers, exclusions
+    )
 
     # schedule completeness over main-stream canonical draws
     observed: dict[str, set[date]] = {}

@@ -1,7 +1,6 @@
 """Phase 3 split / seal / exploration-segment tests (metadata only)."""
 
 import csv
-import math
 from datetime import date
 from pathlib import Path
 
@@ -24,6 +23,9 @@ EXPL = ROOT / "metadata/phase3_exploration_ids.csv"
 HOLD = ROOT / "metadata/phase3_holdout_ids.csv"
 SUMMARY = ROOT / "metadata/phase3_split_summary.csv"
 SEAL = ROOT / "metadata/phase3_holdout_seal.json"
+EXPL_V2 = ROOT / "metadata/phase3_exploration_ids_v2.csv"
+SUMMARY_V2 = ROOT / "metadata/phase3_split_summary_v2.csv"
+SEAL_V2 = ROOT / "metadata/phase3_holdout_seal_v2.json"
 
 
 @pytest.fixture(scope="module")
@@ -37,24 +39,18 @@ def split_artifacts():
     }
 
 
-def test_holdout_count_is_ceil_20_percent(split_artifacts):
+def test_holdout_population_is_frozen(split_artifacts):
+    """D-008 holdout preservation: the original 2,072 F-E002 holdout IDs
+    are frozen — never recomputed against the corrected eligible count,
+    never resized, never moved to exploration. Every frozen ID must still
+    resolve to a canonical draw and remain analysis-eligible (no frozen
+    holdout ID was invalidated by the D-008 exclusion evidence)."""
     meta = load_draw_metadata(DRAWS)
-    regimes = load_csv(ROOT / "metadata/game_regimes.csv", GameRegime)
-    stat_of = {r.regime_id: r.statistical_regime_id for r in regimes}
-    n_by = {}
-    for r in meta:
-        if r["draw_stream"] == "main" and r["analysis_eligible"] == "true":
-            s = stat_of.get(r["regime_id"])
-            if s:
-                n_by[s] = n_by.get(s, 0) + 1
-    hold_by = {}
-    for r in split_artifacts["hold"]:
-        hold_by[r["statistical_regime_id"]] = (
-            hold_by.get(r["statistical_regime_id"], 0) + 1
-        )
-    assert len(hold_by) == 16
-    for s, n in n_by.items():
-        assert hold_by[s] == math.ceil(0.20 * n), s
+    by_id = {r["draw_id"]: r for r in meta}
+    hold_ids = {r["draw_id"] for r in split_artifacts["hold"]}
+    assert len(hold_ids) == 2072
+    assert all(did in by_id for did in hold_ids)
+    assert all(by_id[did]["analysis_eligible"] == "true" for did in hold_ids)
 
 
 def test_split_is_chronological_last_20(split_artifacts):
@@ -85,9 +81,19 @@ def test_no_id_overlap_and_metadata_only(split_artifacts):
 
 
 def test_seal_deterministic_and_sensitive(split_artifacts, tmp_path):
+    import json
     hids = {r["draw_id"] for r in split_artifacts["hold"]}
     s1 = holdout_seal_sha256(DRAWS, hids)
-    assert s1 == split_artifacts["seal"]["holdout_seal_sha256"]
+    # v1 seal is the preserved F-E002 historical record over the ORIGINAL
+    # canonical rows; the corrected dataset's row bytes differ (D-007
+    # provenance column), so the live recomputation must match v2.
+    assert split_artifacts["seal"]["holdout_seal_sha256"] == (
+        "6cb7c382924c4ad55ab0958239cb488cd95b0e0b99407ebebcfe822a4b16b91c"
+    )
+    seal_v2 = json.loads(SEAL_V2.read_text())
+    assert s1 == seal_v2["holdout_seal_sha256"]
+    assert seal_v2["holdout_id_population"].startswith(
+        "frozen original F-E002")
     # mutating a holdout row changes the seal
     lines = DRAWS.read_text().splitlines(keepends=True)
     for i, ln in enumerate(lines):
@@ -105,6 +111,36 @@ def test_split_policy_hash_stable():
     assert h == split_policy_sha256(dict(cfg["split"]))
     changed = dict(cfg["split"], holdout_fraction=0.25)
     assert split_policy_sha256(changed) != h
+
+
+def test_corrected_exploration_is_frozen_intersection(split_artifacts):
+    """F-E003 exploration = original exploration IDs INTERSECT corrected
+    eligible draws; no original holdout ID ever enters exploration."""
+    expl_v2 = {r["draw_id"] for r in csv.DictReader(EXPL_V2.open())}
+    orig_expl = {r["draw_id"] for r in split_artifacts["expl"]}
+    hold_ids = {r["draw_id"] for r in split_artifacts["hold"]}
+    meta = load_draw_metadata(DRAWS)
+    eligible = {
+        r["draw_id"] for r in meta
+        if r["draw_stream"] == "main" and r["analysis_eligible"] == "true"
+    }
+    assert expl_v2 == orig_expl & eligible
+    assert not (expl_v2 & hold_ids)
+    removed = orig_expl - expl_v2
+    assert len(removed) == 12  # exactly the D-008 excluded artifacts
+    summ_v2 = {r["statistical_regime_id"]: r
+               for r in csv.DictReader(SUMMARY_V2.open())}
+    for r in summ_v2.values():
+        segs = [int(x) for x in r["exploration_segment_lengths"].split(";")]
+        assert sum(segs) == int(r["exploration_count"])
+    # per-regime: exploration_count + removed == original count
+    orig_by = {}
+    for r in split_artifacts["expl"]:
+        orig_by[r["statistical_regime_id"]] = (
+            orig_by.get(r["statistical_regime_id"], 0) + 1)
+    for s, r in summ_v2.items():
+        assert int(r["exploration_count"]) + int(
+            r["exploration_removed_count"]) == orig_by[s]
 
 
 def test_all_regimes_in_summary(split_artifacts):

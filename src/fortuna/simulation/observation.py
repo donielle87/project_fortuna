@@ -25,6 +25,7 @@ ALLOWED_DRAW_FIELDS = frozenset(
         "draw_stream",
         "analysis_eligible",
         "numbers_order",
+        "number_sequence_source_id",
         "validation_status",
         "provisional",
     }

@@ -268,3 +268,131 @@ def build_phase3_split(
         "exploration_ids": exploration_ids,
         "holdout_ids": holdout_ids,
     }
+
+
+def build_corrected_split(
+    draws_csv: Path,
+    regimes: list,
+    frozen_holdout_ids: set[str],
+    original_exploration_ids: set[str],
+    out_dir: Path,
+) -> dict:
+    """Corrected (v2) split for F-E003 — METADATA ONLY.
+
+    The original F-E002 holdout population is FROZEN: it is never
+    recomputed, never resized, and never moved. The corrected exploration
+    population is::
+
+        original exploration IDs  INTERSECT  corrected eligible draws
+
+    under the D-007/D-008 corrected canonical dataset. Draws removed from
+    exploration by evidence-based exclusions are recorded, never
+    silently dropped. No winning-number field is read: eligibility and
+    segments come from whitelisted metadata columns; the v2 seal hashes
+    raw canonical holdout row bytes by draw_id membership only.
+    """
+    meta = load_draw_metadata(draws_csv)
+    stat_of = {r.regime_id: r.statistical_regime_id for r in regimes}
+    by_id = {r["draw_id"]: r for r in meta}
+
+    eligible_ids = {
+        r["draw_id"]
+        for r in meta
+        if r["draw_stream"] == "main" and r["analysis_eligible"] == "true"
+    }
+    # A frozen holdout ID invalidated by upstream evidence is documented
+    # but never replaced and never moved to exploration.
+    invalidated_holdout = sorted(frozen_holdout_ids - eligible_ids)
+    exploration_ids = original_exploration_ids & eligible_ids
+    removed_exploration = sorted(original_exploration_ids - eligible_ids)
+    assert not (exploration_ids & frozen_holdout_ids)
+
+    rows = []
+    for did in sorted(
+        exploration_ids,
+        key=lambda d: (
+            stat_of.get(by_id[d]["regime_id"], ""),
+            by_id[d]["draw_date"], d,
+        ),
+    ):
+        r = by_id[did]
+        rows.append({
+            "draw_id": did,
+            "game_id": r["game_id"],
+            "statistical_regime_id": stat_of[r["regime_id"]],
+            "draw_date": r["draw_date"],
+            "draw_stream": r["draw_stream"],
+            "split": "exploration",
+        })
+    expl_hash = write_split_manifest(
+        out_dir / "phase3_exploration_ids_v2.csv", rows, "exploration"
+    )
+
+    seal = holdout_seal_sha256(draws_csv, frozen_holdout_ids)
+    segments = exploration_segments(meta, regimes, stat_of, exploration_ids)
+    order_segments = exploration_segments(
+        meta, regimes, stat_of, exploration_ids, order_only=True
+    )
+
+    # per-regime summary (corrected)
+    hold_by: dict[str, list[dict]] = {}
+    for did in frozen_holdout_ids:
+        r = by_id[did]
+        hold_by.setdefault(stat_of[r["regime_id"]], []).append(r)
+    expl_by: dict[str, list[dict]] = {}
+    for did in exploration_ids:
+        r = by_id[did]
+        expl_by.setdefault(stat_of[r["regime_id"]], []).append(r)
+    removed_by: dict[str, int] = {}
+    for did in removed_exploration:
+        sid = stat_of.get(by_id[did]["regime_id"])
+        if sid:
+            removed_by[sid] = removed_by.get(sid, 0) + 1
+
+    summary = []
+    for stat_id in sorted(set(expl_by) | set(hold_by)):
+        expl = sorted(
+            expl_by.get(stat_id, []),
+            key=lambda r: (r["draw_date"], r["draw_id"]),
+        )
+        hold = sorted(
+            hold_by.get(stat_id, []),
+            key=lambda r: (r["draw_date"], r["draw_id"]),
+        )
+        segs = segments.get(stat_id, [])
+        osegs = order_segments.get(stat_id, [])
+        summary.append({
+            "statistical_regime_id": stat_id,
+            "game_id": (expl or hold)[0]["game_id"],
+            "eligible_main_draw_count": len(expl) + len(hold),
+            "exploration_count": len(expl),
+            "holdout_count": len(hold),
+            "exploration_removed_count": removed_by.get(stat_id, 0),
+            "exploration_end_date": expl[-1]["draw_date"] if expl else "",
+            "holdout_start_date": hold[0]["draw_date"] if hold else "",
+            "exploration_segments": len(segs),
+            "exploration_segment_lengths": ";".join(
+                str(len(s)) for s in segs
+            ),
+            "order_eligible_exploration_count": sum(
+                len(s) for s in osegs
+            ),
+            "order_eligible_segment_lengths": ";".join(
+                str(len(s)) for s in osegs
+            ),
+        })
+    with (out_dir / "phase3_split_summary_v2.csv").open("w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(summary[0]))
+        w.writeheader()
+        w.writerows(summary)
+
+    return {
+        "seal_sha256": seal,
+        "exploration_manifest_sha256": expl_hash,
+        "summary": summary,
+        "segments": segments,
+        "order_segments": order_segments,
+        "exploration_ids": exploration_ids,
+        "removed_exploration_ids": removed_exploration,
+        "invalidated_holdout_ids": invalidated_holdout,
+    }

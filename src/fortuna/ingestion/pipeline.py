@@ -264,6 +264,10 @@ def _merge(primary: StagedDraw, others: list[StagedDraw]) -> dict:
     Field-level precedence: a field missing from the primary is filled from
     the highest-precedence corroborating source that supplies it
     (FIELD_COMPLEMENT is reconciliation, not conflict).
+
+    ``numbers_order`` is deliberately NOT merged here (D-007): order
+    semantics are atomic with the stored sequence and are set in
+    ``build_canonical`` from the chosen sequence source.
     """
     merged = {
         "special_ball": primary.special_ball,
@@ -273,23 +277,63 @@ def _merge(primary: StagedDraw, others: list[StagedDraw]) -> dict:
         "machine_id": primary.machine_id,
         "ball_set_id": primary.ball_set_id,
         "drawing_identifier": primary.drawing_identifier,
-        "numbers_order": primary.numbers_order,
-    }
-    order_pref = {
-        OrderSemantics.PHYSICAL_DRAW_ORDER: 0,
-        OrderSemantics.SOURCE_SORTED_ORDER: 1,
-        OrderSemantics.UNKNOWN_ORDER: 2,
     }
     for o in others:
         for k in merged:
-            if k == "numbers_order":
-                if order_pref[o.numbers_order] < order_pref[merged[k]]:
-                    merged[k] = o.numbers_order
-            elif merged[k] is None:
+            if merged[k] is None:
                 v = getattr(o, k)
                 if v is not None:
                     merged[k] = v
     return merged
+
+
+_ORDER_PREF = {
+    OrderSemantics.PHYSICAL_DRAW_ORDER: 0,
+    OrderSemantics.SOURCE_SORTED_ORDER: 1,
+    OrderSemantics.UNKNOWN_ORDER: 2,
+}
+
+
+def _sequence_source(
+    recs: list[StagedDraw], tiers: dict[str, int]
+) -> StagedDraw:
+    """Choose the staged record supplying the canonical main-number
+    sequence (D-007 atomic provenance).
+
+    Default is the primary record. A corroborating record may supply the
+    canonical sequence only if it is authoritative (tier <= 2) AND
+    strictly improves the order semantics (physical > sorted > unknown)
+    — in which case its OWN stored sequence is used, never a borrowed
+    label over the primary's sequence.
+    """
+    best = recs[0]
+    for o in recs[1:]:
+        if tiers.get(o.source_id, _UNKNOWN_SOURCE_TIER) > 2:
+            continue  # unofficial sources cannot supply order semantics
+        if _ORDER_PREF[o.numbers_order] < _ORDER_PREF[best.numbers_order]:
+            best = o
+    return best
+
+
+def load_exclusions(repo_root: Path) -> dict[str, dict]:
+    """Evidence-based draw exclusions from metadata/draw_exclusions.csv.
+
+    Key: canonical draw_id. Only rows with decision_status == 'excluded'
+    take effect; other statuses are documentation only. Each exclusion is
+    a record-specific, evidence-backed determination that the canonical
+    draw event did not occur (e.g. a misdated source record), NOT a
+    generic schedule or duplicate rule.
+    """
+    import csv as _csv
+
+    path = repo_root / "metadata/draw_exclusions.csv"
+    out: dict[str, dict] = {}
+    if not path.exists():
+        return out
+    for row in _csv.DictReader(path.open()):
+        if row.get("decision_status", "").strip() == "excluded":
+            out[row["draw_id"]] = row
+    return out
 
 
 def build_canonical(
@@ -317,7 +361,12 @@ def build_canonical(
         recs.sort(key=lambda r: _tier_key(tiers, order, r.source_id))
         primary = recs[0]
         merged = _merge(primary, recs[1:])
-        main_numbers = primary.main_numbers
+        # Atomic sequence provenance (D-007): the stored sequence, its
+        # order semantics, and its source come from ONE staged record.
+        seq_src = _sequence_source(recs, tiers)
+        main_numbers = seq_src.main_numbers
+        numbers_order = seq_src.numbers_order
+        seq_source_id = seq_src.source_id
         special_ball = merged["special_ball"]
 
         primary_tier = tiers.get(primary.source_id, _UNKNOWN_SOURCE_TIER)
@@ -335,7 +384,12 @@ def build_canonical(
                     main_numbers = [
                         int(x) for x in resolutions[key]["resolved_value"].split(";")
                     ]
-                    merged["numbers_order"] = OrderSemantics.SOURCE_SORTED_ORDER
+                    # The stored sequence is now the resolved sorted value;
+                    # its provenance is the resolution's evidence source.
+                    numbers_order = OrderSemantics.SOURCE_SORTED_ORDER
+                    seq_source_id = resolutions[key].get(
+                        "evidence_source_id"
+                    ) or seq_source_id
                 elif authoritative_dispute:
                     conflict_keys.add(key)
             if other.special_ball != primary.special_ball:
@@ -372,7 +426,8 @@ def build_canonical(
             draw_date=d,
             draw_stream=stream,
             main_numbers=main_numbers,
-            numbers_order=merged["numbers_order"],
+            numbers_order=numbers_order,
+            number_sequence_source_id=seq_source_id,
             special_ball=special_ball,
             multiplier=merged["multiplier"],
             jackpot=merged["jackpot"],
@@ -417,15 +472,20 @@ def apply_eligibility(
     conflict_keys: set[tuple[str, date, str]],
     regimes: list[GameRegime],
     tiers: dict[str, int] | None = None,
+    exclusions: dict[str, dict] | None = None,
 ) -> dict[str, list[str]]:
     """Final eligibility gate; mutates analysis_eligible in place.
 
     Returns draw_id -> list of ineligibility reason codes (empty for
     eligible draws). A draw is eligible only if at least one Tier-1/Tier-2
     (official) source backs it; a draw whose only sources are Tier-3
-    unofficial can never be analysis-eligible.
+    unofficial can never be analysis-eligible. ``exclusions`` (draw_id ->
+    ledger row) carries evidence-based determinations that the canonical
+    draw event did not occur (D-007); such rows are retained in the store
+    for audit but are never analysis-eligible.
     """
     tiers = tiers or {}
+    exclusions = exclusions or {}
     regime_by_id = {r.regime_id: r for r in regimes}
     reasons: dict[str, list[str]] = {}
     for d in draws:
@@ -433,6 +493,13 @@ def apply_eligibility(
         notes: list[str] = list(
             filter(None, [d.data_quality_notes])
         )
+        if d.draw_id in exclusions:
+            codes.append("excluded_non_draw_artifact")
+            notes.append(
+                f"excluded per draw_exclusions.csv "
+                f"({exclusions[d.draw_id].get('reason_code', '')}; "
+                f"{exclusions[d.draw_id].get('decision_id', '')})"
+            )
         if not (d.source_id and d.raw_artifact_sha256):
             codes.append("missing_provenance")
             notes.append("missing provenance")

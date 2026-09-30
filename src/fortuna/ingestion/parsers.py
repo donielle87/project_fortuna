@@ -21,6 +21,43 @@ PARSER_VERSION = "1.0.0"
 _XLSX_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 
 
+def apply_order_audit(recs: list[StagedDraw]) -> list[StagedDraw]:
+    """Evidence-based audit of physical-order claims (D-007).
+
+    A staged record may claim ``physical_draw_order`` only when its stored
+    sequence is not literally ascending — an ascending sequence cannot
+    distinguish a true physical draw order from sorted/backfilled data.
+
+    * A calendar year whose ENTIRE physical-claimed population is
+      ascending is reclassified ``source_sorted_order``: the artifact
+      provably stores sorted data for that era (e.g. SRC-WI-PB-CSV
+      1992–2003, fetched with ``dir=drawn`` but delivered sorted).
+    * Otherwise an ascending row is demoted to ``unknown_order``
+      (unverifiable) while non-ascending rows keep the physical claim —
+      a non-ascending stored sequence cannot be sorted output.
+    """
+    by_year: dict[int, list[StagedDraw]] = {}
+    for r in recs:
+        if r.numbers_order == OrderSemantics.PHYSICAL_DRAW_ORDER:
+            by_year.setdefault(r.draw_date.year, []).append(r)
+    for rs in by_year.values():
+        all_sorted = all(
+            r.main_numbers == sorted(r.main_numbers) for r in rs
+        )
+        for r in rs:
+            if all_sorted:
+                r.numbers_order = OrderSemantics.SOURCE_SORTED_ORDER
+                r.notes = (
+                    f"{r.notes}; " if r.notes else ""
+                ) + "order audit: era is entirely ascending in artifact"
+            elif r.main_numbers == sorted(r.main_numbers):
+                r.numbers_order = OrderSemantics.UNKNOWN_ORDER
+                r.notes = (
+                    f"{r.notes}; " if r.notes else ""
+                ) + "order audit: ascending row cannot prove physical order"
+    return recs
+
+
 def _artifact_ctx(artifact) -> dict:
     return {
         "source_id": artifact.source_id,
@@ -264,7 +301,7 @@ def parse_tx_csv(content: bytes, artifact, *, game_id: str) -> list[StagedDraw]:
                 **_artifact_ctx(artifact),
             )
         )
-    return out
+    return apply_order_audit(out)
 
 
 _PDF_ROW_RE = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{2})\s+(.*)")
@@ -398,7 +435,7 @@ def parse_fl_history_lines(
             **_artifact_ctx(artifact),
         )
         out.append(rec)
-    return out
+    return apply_order_audit(out)
 
 
 def parse_wi_powerball_csv(content: bytes, artifact) -> list[StagedDraw]:
@@ -442,7 +479,7 @@ def parse_wi_powerball_csv(content: bytes, artifact) -> list[StagedDraw]:
                 **_artifact_ctx(artifact),
             )
         )
-    return out
+    return apply_order_audit(out)
 
 
 _MD_ROW_RE = re.compile(

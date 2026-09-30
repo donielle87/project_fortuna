@@ -73,6 +73,16 @@ class Draw(BaseModel):
         default=OrderSemantics.UNKNOWN_ORDER,
         description="Semantics of main_numbers ordering — never inferred",
     )
+    number_sequence_source_id: str | None = Field(
+        default=None,
+        description=(
+            "Atomic sequence provenance (D-007): the staged source whose "
+            "literal main-number sequence is stored in main_numbers. "
+            "numbers_order describes THAT source's sequence — it is never "
+            "borrowed from a different source. For resolution-overridden "
+            "values this is the resolution's evidence source."
+        ),
+    )
     special_ball: int | None = None
     multiplier: float | None = Field(
         default=None, description="Drawn multiplier (Power Play / Megaplier / built-in)"

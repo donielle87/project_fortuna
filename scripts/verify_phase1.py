@@ -242,6 +242,70 @@ def main() -> int:
     except Exception as exc:  # noqa: BLE001
         check(False, f"pooling failed: {exc}")
 
+    # ---- D-007 atomic sequence provenance -------------------------------
+    from fortuna.ingestion.pipeline import load_resolutions
+
+    check(
+        all(d.number_sequence_source_id for d in draws),
+        "every draw carries number_sequence_source_id",
+    )
+    # Resolution-overridden sequences legitimately name the resolution's
+    # evidence source, which may not be among the draw's staged sources.
+    resolution_sources = {
+        r.get("evidence_source_id", "") for r in load_resolutions(ROOT).values()
+    }
+    check(
+        all(
+            d.number_sequence_source_id in draw_source_ids(d)
+            or d.number_sequence_source_id in resolution_sources
+            for d in draws
+        ),
+        "sequence source is a backing source or a resolution evidence source",
+    )
+    physical_capable = {
+        "SRC-WI-PB-CSV", "SRC-MO-PB-XLSX", "SRC-TX-PB-CSV",
+        "SRC-TX-MM-CSV", "SRC-FL-LOTTO-HIST-PDF",
+    }
+    bad_phys = [
+        d.draw_id
+        for d in draws
+        if d.numbers_order.value == "physical_draw_order"
+        and (
+            d.number_sequence_source_id not in physical_capable
+            or d.main_numbers == sorted(d.main_numbers)
+        )
+    ]
+    check(
+        not bad_phys,
+        "physical-order rows have physical-capable sequence source and "
+        f"non-ascending sequence {bad_phys[:5]}",
+    )
+
+    # ---- D-008 draw-exclusion ledger -------------------------------------
+    from fortuna.ingestion.pipeline import load_exclusions
+
+    exclusions = load_exclusions(ROOT)
+    ledger_path = ROOT / "metadata/draw_exclusions.csv"
+    check(ledger_path.exists(), "draw_exclusions.csv exists")
+    by_draw_id = {d.draw_id: d for d in draws}
+    excl_bad = [
+        did for did in exclusions
+        if did not in by_draw_id or by_draw_id[did].analysis_eligible
+    ]
+    check(
+        not excl_bad,
+        f"every ledger exclusion is a canonical ineligible draw {excl_bad}",
+    )
+    check(
+        all(
+            "excluded_non_draw_artifact" in (d.data_quality_notes or "")
+            for did in exclusions
+            for d in [by_draw_id[did]]
+            if did in by_draw_id
+        ),
+        "excluded draws carry excluded_non_draw_artifact reason",
+    )
+
     # manifest
     import json
 
