@@ -80,6 +80,58 @@ def fetch_bytes(url: str, timeout: float = DEFAULT_TIMEOUT) -> Fetched:
         return _get_curl(url, timeout)
 
 
+def fetch_post_bytes(
+    url: str, json_body: dict, timeout: float = DEFAULT_TIMEOUT
+) -> Fetched:
+    """POST a JSON body and return response bytes (requests; curl fallback)."""
+    os.environ.pop("SSLKEYLOGFILE", None)
+    try:
+        resp = requests.post(
+            url,
+            json=json_body,
+            timeout=timeout,
+            headers={"User-Agent": DEFAULT_UA},
+        )
+        resp.raise_for_status()
+        mime = resp.headers.get("Content-Type", "application/octet-stream")
+        return Fetched(resp.content, mime, "requests")
+    except requests.exceptions.SSLError:
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=".json", mode="w"
+        ) as bf:
+            import json as _json
+
+            _json.dump(json_body, bf)
+            body_path = bf.name
+        with tempfile.NamedTemporaryFile(delete=False) as tf:
+            tmp = tf.name
+        try:
+            proc = subprocess.run(
+                [
+                    "curl", "-sS", "-L", "-f",
+                    "--max-time", str(int(timeout)),
+                    "-A", DEFAULT_UA,
+                    "-H", "Content-Type: application/json",
+                    "-d", "@" + body_path,
+                    "-w", "%{content_type}",
+                    "-o", tmp,
+                    url,
+                ],
+                capture_output=True, text=True, check=False,
+            )
+            if proc.returncode != 0:
+                raise RuntimeError(
+                    f"curl POST failed ({proc.returncode}): {proc.stderr.strip()}"
+                )
+            mime = proc.stdout.strip() or "application/octet-stream"
+            return Fetched(open(tmp, "rb").read(), mime, "curl")
+        finally:
+            os.unlink(tmp)
+            os.unlink(body_path)
+
+
 def fetch_source(
     source: Source,
     store: ArtifactStore,

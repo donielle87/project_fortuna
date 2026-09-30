@@ -7,10 +7,20 @@ Canonical key: (game_id, draw_date, draw_stream). The primary record for each
 key comes from the highest-precedence authoritative source; other sources are
 recorded as corroborating and reconciled field-by-field.
 
-Precedence (authoritative-first):
-  powerball:      NY archive (official operator archive, full history) >
-                  NY Socrata open-data > MO xlsx > TX csv > FL PDF
-  mega_millions:  NY archive > NY Socrata > TX csv > FL PDF
+Precedence (authority-first, then coverage):
+  Within each authority tier, the order below applies. An unofficial
+  (Tier-3) source can never outrank an official (Tier 1/2) source — the
+  effective sort key is (authority_tier, position in this list).
+
+  powerball:      WI csv (Tier-1, full history, physical draw order)
+                  > MO xlsx > TX csv > FL PDF > MD archive (Tier-1s)
+                  > NY Socrata open-data (Tier-2)
+                  > nylottery.org archive (Tier-3, reconciliation only)
+  mega_millions:  megamillions.com operator API (Tier-1)
+                  > MD archive (Tier-1, full history incl. Big Game)
+                  > TX csv > FL PDF (Tier-1s)
+                  > NY Socrata open-data (Tier-2)
+                  > nylottery.org archive (Tier-3, reconciliation only)
   florida_lotto:  FL official history PDF (sole authoritative archive)
 
 Double Play rows are a separate stream (draw_stream=double_play) and are
@@ -43,22 +53,74 @@ INGESTION_VERSION = "1.0.0"
 
 GAME_PREFIX = {"powerball": "PB", "mega_millions": "MM", "florida_lotto": "FL"}
 
+# Within-tier ordering only. The effective precedence key is
+# (authority_tier, index in this list); Tier-3 sources therefore can never
+# outrank an authoritative source regardless of list position.
 SOURCE_PRECEDENCE: dict[str, list[str]] = {
     "powerball": [
-        "SRC-NY-PB-ARCHIVE",
-        "SRC-NY-PB-DATA",
+        "SRC-WI-PB-CSV",
         "SRC-MO-PB-XLSX",
         "SRC-TX-PB-CSV",
         "SRC-FL-PB-HIST-PDF",
+        "SRC-MD-PB-ARCHIVE",
+        "SRC-NY-PB-DATA",
+        "SRC-NY-PB-ARCHIVE",
     ],
     "mega_millions": [
-        "SRC-NY-MM-ARCHIVE",
-        "SRC-NY-MM-DATA",
+        "SRC-MM-COM-API",
+        "SRC-MD-MM-ARCHIVE",
         "SRC-TX-MM-CSV",
         "SRC-FL-MM-HIST-PDF",
+        "SRC-NY-MM-DATA",
+        "SRC-NY-MM-ARCHIVE",
     ],
     "florida_lotto": ["SRC-FL-LOTTO-HIST-PDF"],
 }
+
+# Authority tier for sources absent from the registry (defensive: unknown
+# sources are treated as unofficial).
+_UNKNOWN_SOURCE_TIER = 3
+
+
+def load_source_tiers(repo_root: Path) -> dict[str, int]:
+    """source_id -> authority_tier from metadata/source_registry.csv."""
+    import csv as _csv
+
+    tiers: dict[str, int] = {}
+    reg = repo_root / "metadata/source_registry.csv"
+    if reg.exists():
+        for row in _csv.DictReader(reg.open()):
+            try:
+                tiers[row["source_id"]] = int(row["authority_tier"])
+            except (KeyError, ValueError):
+                continue
+    return tiers
+
+
+def load_resolutions(repo_root: Path) -> dict[tuple[str, date, str], dict]:
+    """Authoritative conflict resolutions from metadata/draw_resolutions.csv.
+
+    Key: (game_id, draw_date, field) where field is the canonical name
+    ('main_numbers' | 'special_ball' | 'multiplier'). A resolution exists
+    only when an official source has definitively settled the value.
+    """
+    import csv as _csv
+
+    path = repo_root / "metadata/draw_resolutions.csv"
+    out: dict[tuple[str, date, str], dict] = {}
+    if not path.exists():
+        return out
+    for row in _csv.DictReader(path.open()):
+        if row.get("status", "").strip() != "resolved":
+            continue
+        key = (row["game_id"], date.fromisoformat(row["draw_date"]), row["field"])
+        out[key] = row
+    return out
+
+
+def draw_source_ids(draw: "Draw") -> list[str]:
+    """All sources backing a canonical draw (primary + corroborating)."""
+    return [draw.source_id, *draw.corroborating_source_ids]
 
 # Fields compared during cross-source reconciliation.
 _COMPARE_FIELDS = ("main_numbers_sorted", "special_ball", "multiplier")
@@ -75,6 +137,14 @@ def _precedence(order: list[str], source_id: str) -> int:
     return order.index(source_id) if source_id in order else len(order)
 
 
+def _tier_key(
+    tiers: dict[str, int], order: list[str], source_id: str
+) -> tuple[int, int]:
+    """(authority_tier, within-tier precedence). An unofficial source can
+    never sort ahead of an authoritative one, regardless of list order."""
+    return (tiers.get(source_id, _UNKNOWN_SOURCE_TIER), _precedence(order, source_id))
+
+
 def _fmt_val(v: object) -> str:
     if v is None:
         return ""
@@ -85,6 +155,7 @@ def _fmt_val(v: object) -> str:
 
 def reconcile_groups(
     staged: list[StagedDraw],
+    tiers: dict[str, int] | None = None,
 ) -> tuple[
     dict[tuple[str, date, DrawStream], list[StagedDraw]],
     list[dict],
@@ -94,14 +165,37 @@ def reconcile_groups(
     Returns (groups, reconciliation_rows). A reconciliation row is produced
     per (key, source-pair-field-difference) and per missing-source overlap.
     """
+    tiers = tiers or {}
     groups: dict[tuple[str, date, DrawStream], list[StagedDraw]] = defaultdict(list)
+    seen_sig: dict[tuple[str, date, DrawStream], set[tuple]] = defaultdict(set)
     for s in staged:
-        groups[(s.game_id, s.draw_date, s.draw_stream)].append(s)
+        key = (s.game_id, s.draw_date, s.draw_stream)
+        # Identical re-retrievals of the same source (e.g. a second fetch
+        # produced a byte-different artifact with identical parsed content)
+        # carry no information — dedupe on the parsed signature. Records
+        # from the same source that differ in content are kept so the
+        # divergence is surfaced in reconciliation.
+        sig = (
+            s.source_id,
+            tuple(sorted(s.main_numbers)),
+            s.special_ball,
+            s.multiplier,
+            s.jackpot,
+            s.jackpot_winners,
+            s.machine_id,
+            s.ball_set_id,
+            s.drawing_identifier,
+            s.numbers_order,
+        )
+        if sig in seen_sig[key]:
+            continue
+        seen_sig[key].add(sig)
+        groups[key].append(s)
 
     rows: list[dict] = []
     for (game_id, d, stream), recs in sorted(groups.items()):
         order = SOURCE_PRECEDENCE.get(game_id, [])
-        recs.sort(key=lambda r: _precedence(order, r.source_id))
+        recs.sort(key=lambda r: _tier_key(tiers, order, r.source_id))
         primary = recs[0]
         for other in recs[1:]:
             for fld in _COMPARE_FIELDS:
@@ -119,6 +213,16 @@ def reconcile_groups(
                     cls = "MATCH"
                 else:
                     cls = "CONFLICT"
+                # A divergence between an authoritative primary and a Tier-3
+                # (unofficial) source is a secondary-source error, not an
+                # unresolved conflict: the authoritative value controls by
+                # documented precedence. Authoritative-vs-authoritative
+                # divergences stay unresolved.
+                secondary_divergence = (
+                    cls == "CONFLICT"
+                    and tiers.get(primary.source_id, _UNKNOWN_SOURCE_TIER) <= 2
+                    and tiers.get(other.source_id, _UNKNOWN_SOURCE_TIER) >= 3
+                )
                 if cls != "MATCH" or fld == "main_numbers_sorted":
                     rows.append(
                         {
@@ -131,10 +235,24 @@ def reconcile_groups(
                             "source_b": other.source_id,
                             "value_b": _fmt_val(vb),
                             "classification": cls,
-                            "resolution": "" if cls == "CONFLICT" else "n/a",
+                            "resolution": (
+                                "authoritative precedence"
+                                if secondary_divergence
+                                else ("" if cls == "CONFLICT" else "n/a")
+                            ),
                             "resolution_evidence": "",
-                            "status": "unresolved" if cls == "CONFLICT" else "resolved",
-                            "notes": "",
+                            "status": (
+                                "resolved"
+                                if cls != "CONFLICT" or secondary_divergence
+                                else "unresolved"
+                            ),
+                            "notes": (
+                                "unofficial source diverges from authoritative "
+                                "primary; recorded for audit, does not affect "
+                                "canonical value"
+                                if secondary_divergence
+                                else ""
+                            ),
                         }
                     )
     return groups, rows
@@ -177,28 +295,55 @@ def _merge(primary: StagedDraw, others: list[StagedDraw]) -> dict:
 def build_canonical(
     groups: dict[tuple[str, date, DrawStream], list[StagedDraw]],
     regimes: list[GameRegime],
+    tiers: dict[str, int] | None = None,
+    resolutions: dict[tuple[str, date, str], dict] | None = None,
 ) -> tuple[list[Draw], list[str], set[tuple[str, date, str]]]:
     """Produce canonical Draws + conflict keys.
 
     Returns (draws, fatal_errors, conflict_keys). Conflict keys are
     (game_id, draw_date, field) tuples with an unresolved winning-number or
     special-ball conflict — those draws can never be analysis-eligible.
+    Conflicts with an authoritative resolution in draw_resolutions.csv are
+    applied (canonical value set to the resolved value) and not flagged.
     """
+    tiers = tiers or {}
+    resolutions = resolutions or {}
     draws: list[Draw] = []
     errors: list[str] = []
     conflict_keys: set[tuple[str, date, str]] = set()
 
     for (game_id, d, stream), recs in sorted(groups.items()):
         order = SOURCE_PRECEDENCE.get(game_id, [])
-        recs.sort(key=lambda r: _precedence(order, r.source_id))
+        recs.sort(key=lambda r: _tier_key(tiers, order, r.source_id))
         primary = recs[0]
         merged = _merge(primary, recs[1:])
+        main_numbers = primary.main_numbers
+        special_ball = merged["special_ball"]
 
+        primary_tier = tiers.get(primary.source_id, _UNKNOWN_SOURCE_TIER)
         for other in recs[1:]:
+            # A Tier-3 (unofficial) divergence from an authoritative primary
+            # is a secondary-source error: it is logged in the reconciliation
+            # registry but does not create an unresolved conflict.
+            authoritative_dispute = (
+                primary_tier > 2
+                or tiers.get(other.source_id, _UNKNOWN_SOURCE_TIER) <= 2
+            )
             if sorted(other.main_numbers) != sorted(primary.main_numbers):
-                conflict_keys.add((game_id, d, "main_numbers"))
+                key = (game_id, d, "main_numbers")
+                if key in resolutions:
+                    main_numbers = [
+                        int(x) for x in resolutions[key]["resolved_value"].split(";")
+                    ]
+                    merged["numbers_order"] = OrderSemantics.SOURCE_SORTED_ORDER
+                elif authoritative_dispute:
+                    conflict_keys.add(key)
             if other.special_ball != primary.special_ball:
-                conflict_keys.add((game_id, d, "special_ball"))
+                key = (game_id, d, "special_ball")
+                if key in resolutions:
+                    special_ball = int(resolutions[key]["resolved_value"])
+                elif authoritative_dispute:
+                    conflict_keys.add(key)
 
         try:
             regime = assign_regime(game_id, d, regimes)
@@ -226,9 +371,9 @@ def build_canonical(
             regime_id=regime_id,
             draw_date=d,
             draw_stream=stream,
-            main_numbers=primary.main_numbers,
+            main_numbers=main_numbers,
             numbers_order=merged["numbers_order"],
-            special_ball=merged["special_ball"],
+            special_ball=special_ball,
             multiplier=merged["multiplier"],
             jackpot=merged["jackpot"],
             jackpot_winners=merged["jackpot_winners"],
@@ -271,42 +416,66 @@ def apply_eligibility(
     draws: list[Draw],
     conflict_keys: set[tuple[str, date, str]],
     regimes: list[GameRegime],
-) -> None:
-    """Final eligibility gate; mutates analysis_eligible in place."""
+    tiers: dict[str, int] | None = None,
+) -> dict[str, list[str]]:
+    """Final eligibility gate; mutates analysis_eligible in place.
+
+    Returns draw_id -> list of ineligibility reason codes (empty for
+    eligible draws). A draw is eligible only if at least one Tier-1/Tier-2
+    (official) source backs it; a draw whose only sources are Tier-3
+    unofficial can never be analysis-eligible.
+    """
+    tiers = tiers or {}
     regime_by_id = {r.regime_id: r for r in regimes}
+    reasons: dict[str, list[str]] = {}
     for d in draws:
+        codes: list[str] = []
         notes: list[str] = list(
             filter(None, [d.data_quality_notes])
         )
-        eligible = True
         if not (d.source_id and d.raw_artifact_sha256):
-            eligible = False
+            codes.append("missing_provenance")
             notes.append("missing provenance")
-        if d.validation_status != DrawValidationStatus.VALID:
-            eligible = False
+        if d.validation_status == DrawValidationStatus.REJECTED:
+            codes.append("structural_rejection")
+            notes.append(f"validation_status={d.validation_status.value}")
+        elif d.validation_status == DrawValidationStatus.QUARANTINED:
+            codes.append("boundary_quarantine")
+            notes.append(f"validation_status={d.validation_status.value}")
+        elif d.validation_status != DrawValidationStatus.VALID:
+            codes.append("invalid_status")
             notes.append(f"validation_status={d.validation_status.value}")
         if d.provisional:
-            eligible = False
+            codes.append("provisional_source")
             notes.append("provisional source")
+        source_tiers = [
+            tiers.get(sid, _UNKNOWN_SOURCE_TIER) for sid in draw_source_ids(d)
+        ]
+        if not any(t <= 2 for t in source_tiers):
+            codes.append("unofficial_source_only")
+            notes.append("no authoritative (tier<=2) source")
         regime = regime_by_id.get(d.regime_id)
         if regime is None:
-            eligible = False
+            codes.append("no_regime")
             notes.append("no regime")
         elif (
             regime.first_unambiguous_draw is not None
             and d.draw_date < regime.first_unambiguous_draw
         ):
-            eligible = False
+            codes.append("boundary_quarantine")
             notes.append("quarantine window")
         if any(
             (d.game_id, d.draw_date, fld) in conflict_keys
             for fld in ("main_numbers", "special_ball")
         ):
-            eligible = False
+            codes.append("unresolved_conflict")
             notes.append("unresolved winning-number conflict")
-        d.analysis_eligible = eligible
+        d.analysis_eligible = not codes
+        if codes:
+            reasons[d.draw_id] = codes
         if notes:
             d.data_quality_notes = "; ".join(notes)
+    return reasons
 
 
 _WD = {"mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6}
@@ -366,7 +535,8 @@ def write_manifest(
     draws: list[Draw],
     artifact_shas: dict[str, list[str]],
     dataset_sha: str,
-    git_commit: str | None,
+    build_code_commit: str | None,
+    ineligible_reasons: dict[str, list[str]] | None = None,
 ) -> None:
     by_game: dict[str, dict] = {}
     for d in draws:
@@ -378,21 +548,33 @@ def write_manifest(
         s = d.draw_date.isoformat()
         g["earliest"] = s if g["earliest"] is None else min(g["earliest"], s)
         g["latest"] = s if g["latest"] is None else max(g["latest"], s)
+
+    num_eligible = sum(1 for d in draws if d.analysis_eligible)
+    reason_counts: dict[str, int] = {}
+    for codes in (ineligible_reasons or {}).values():
+        for c in codes:
+            reason_counts[c] = reason_counts.get(c, 0) + 1
+
     manifest = {
         "dataset_version": INGESTION_VERSION,
         "build_timestamp": datetime.now(UTC).isoformat(),
-        "code_commit": git_commit,
+        # The committed code state that produced this dataset. Must name a
+        # commit that actually contains the build pipeline (verified by
+        # scripts/verify_phase1.py against the git object store).
+        "build_code_commit": build_code_commit,
         "hash_algorithm": "sha256",
         "dataset_sha256": dataset_sha,
         "source_artifact_sha256": artifact_shas,
         "num_draws": len(draws),
-        "num_analysis_eligible": sum(1 for d in draws if d.analysis_eligible),
+        "num_analysis_eligible": num_eligible,
+        "num_analysis_ineligible": len(draws) - num_eligible,
         "num_quarantined_or_rejected": sum(
             1
             for d in draws
             if d.validation_status
             in (DrawValidationStatus.QUARANTINED, DrawValidationStatus.REJECTED)
         ),
+        "analysis_ineligible_reason_counts": reason_counts,
         "coverage_by_game": by_game,
         "parser_version": "1.0.0",
         "ingestion_version": INGESTION_VERSION,

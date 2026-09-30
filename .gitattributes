@@ -1,0 +1,2 @@
+# Raw artifacts are immutable evidence: never normalize line endings.
+data/raw/** -text

@@ -11,7 +11,12 @@ Checks (no statistics — data engineering and quality only):
   * FL Lotto coverage reaches 1988-05-07; order-semantics split intact
   * Double Play rows exist only under draw_stream=double_play
   * unresolved winning-number conflicts -> not eligible
+  * source-authority gate: no eligible draw is backed solely by Tier-3
+    (unofficial) sources; unofficial sources are never marked Tier-1;
+    precedence never ranks an unofficial source above an authoritative one
   * manifest contains a dataset hash and artifact hashes
+  * manifest build_code_commit names a committed code state containing the
+    build pipeline; manifest counts reconcile
   * artifact files exist and match manifest hashes
   * offline rebuild is deterministic (dataset hash stable across rebuilds)
 """
@@ -155,7 +160,7 @@ def main() -> int:
         "main series carries no DP rows",
     )
 
-    # conflicts ineligible
+    # conflicts ineligible (unresolved CONFLICT rows only)
     import csv
 
     recon = list(csv.DictReader(open(ROOT / "metadata/reconciliation_registry.csv")))
@@ -164,6 +169,7 @@ def main() -> int:
         for r in recon
         if r["classification"] == "CONFLICT"
         and r["field"] in ("main_numbers_sorted", "special_ball")
+        and r["status"] == "unresolved"
     }
     bad = [
         d.draw_id
@@ -171,6 +177,63 @@ def main() -> int:
         if d.analysis_eligible and (d.game_id, d.draw_date.isoformat()) in conflict_keys
     ]
     check(not bad, f"no eligible draw with unresolved number conflict {bad[:5]}")
+
+    # ---- source-authority gate ----
+    from fortuna.ingestion.pipeline import (
+        SOURCE_PRECEDENCE,
+        _precedence,
+        draw_source_ids,
+        load_source_tiers,
+    )
+    from fortuna.schemas.sources import Source
+
+    sources = load_csv(ROOT / "metadata/source_registry.csv", Source)
+    tiers = {s.source_id: s.authority_tier for s in sources}
+    loaded_tiers = load_source_tiers(ROOT)
+    check(tiers == loaded_tiers, "registry tiers consistent with pipeline loader")
+
+    # no unofficial source masquerading as Tier 1
+    tier1_secondary = [
+        s.source_id
+        for s in sources
+        if s.authority_tier == 1 and s.source_type.value == "secondary"
+    ]
+    check(not tier1_secondary, f"no Tier-1 secondary sources {tier1_secondary}")
+    ny_archive_mislabeled = [
+        s.source_id
+        for s in sources
+        if "nylottery.org" in s.url and s.authority_tier < 3
+    ]
+    check(
+        not ny_archive_mislabeled,
+        f"nylottery.org sources are Tier 3 {ny_archive_mislabeled}",
+    )
+
+    # precedence: no unofficial source ahead of an authoritative one
+    prec_bad = []
+    for g, order in SOURCE_PRECEDENCE.items():
+        for sid in order:
+            if tiers.get(sid, 3) >= 3 and any(
+                tiers.get(o, 3) <= 2 and _precedence(order, sid) < _precedence(order, o)
+                for o in order
+            ):
+                # unofficial source listed ahead of an authoritative source
+                prec_bad.append((g, sid))
+    check(
+        not prec_bad,
+        f"unofficial sources never precede authoritative in precedence {prec_bad}",
+    )
+
+    # eligibility: every eligible draw has >=1 tier<=2 source
+    unofficial_only = [
+        d.draw_id
+        for d in eligible
+        if not any(tiers.get(sid, 3) <= 2 for sid in draw_source_ids(d))
+    ]
+    check(
+        not unofficial_only,
+        f"no eligible draw backed solely by unofficial sources {unofficial_only[:5]}",
+    )
 
     # poolability of eligible draws only
     try:
@@ -189,6 +252,49 @@ def main() -> int:
         "manifest declares sha256",
     )
     check(man.get("num_draws") == len(draws), "manifest draw count matches")
+
+    # manifest count reconciliation
+    check(
+        man.get("num_analysis_eligible") == len(eligible),
+        "manifest eligible count matches",
+    )
+    check(
+        man.get("num_analysis_ineligible") == len(draws) - len(eligible)
+        and man.get("num_draws")
+        == man.get("num_analysis_eligible") + man.get("num_analysis_ineligible"),
+        "manifest draws = eligible + ineligible",
+    )
+    reason_counts = man.get("analysis_ineligible_reason_counts") or {}
+    inelig = [d for d in draws if not d.analysis_eligible]
+    check(
+        sum(reason_counts.values()) >= len(inelig)
+        and sum(1 for d in draws if not d.analysis_eligible) == len(inelig),
+        "ineligible reason counts cover every ineligible draw",
+    )
+
+    # build_code_commit: must be a real commit containing the build pipeline
+    import subprocess
+
+    bcc = man.get("build_code_commit")
+    ok_commit = False
+    if bcc:
+        def _git_ok(*args: str) -> bool:
+            return subprocess.run(
+                ["git", "-c", f"safe.directory={ROOT}", *args],
+                capture_output=True, cwd=ROOT,
+            ).returncode == 0
+
+        ok_commit = _git_ok("cat-file", "-e", f"{bcc}^{{commit}}") and _git_ok(
+            "cat-file",
+            "-e",
+            f"{bcc}:src/fortuna/ingestion/pipeline.py",
+        ) and _git_ok(
+            "cat-file", "-e", f"{bcc}:scripts/build_draw_database.py"
+        )
+    check(
+        ok_commit,
+        f"build_code_commit {bcc} is a committed state containing the build pipeline",
+    )
 
     # artifact integrity
     missing_arts = [

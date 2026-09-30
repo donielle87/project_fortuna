@@ -27,6 +27,8 @@ from fortuna.ingestion.pipeline import (
     apply_eligibility,
     build_canonical,
     dataset_hash,
+    load_resolutions,
+    load_source_tiers,
     reconcile_groups,
     schedule_audit,
     structural_validate,
@@ -76,6 +78,18 @@ def parse_artifacts(artifacts: list[RawArtifact]) -> list[StagedDraw]:
                 content, art, slug="mega-millions", game_id="mega_millions",
                 special_cls="mega-ball",
             )
+        elif sid == "SRC-WI-PB-CSV":
+            staged += parsers.parse_wi_powerball_csv(content, art)
+        elif sid == "SRC-MD-MM-ARCHIVE":
+            staged += parsers.parse_md_archive_html(
+                content, art, game_id="mega_millions"
+            )
+        elif sid == "SRC-MD-PB-ARCHIVE":
+            staged += parsers.parse_md_archive_html(
+                content, art, game_id="powerball"
+            )
+        elif sid == "SRC-MM-COM-API":
+            staged += parsers.parse_mm_com_api(content, art)
         elif sid == "SRC-MO-PB-XLSX":
             staged += parsers.parse_mo_powerball_xlsx(content, art)
         elif sid == "SRC-TX-PB-CSV":
@@ -108,26 +122,88 @@ def _write_dict_csv(path: Path, rows: list[dict], fields: list[str]) -> None:
             w.writerow({k: r.get(k, "") for k in fields})
 
 
+def _git(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["git", "-c", f"safe.directory={ROOT}", *args],
+        capture_output=True, text=True, check=True, cwd=ROOT,
+    )
+
+
 def _git_commit() -> str | None:
     try:
-        out = subprocess.run(
-            ["git", "-c", f"safe.directory={ROOT}", "rev-parse", "HEAD"],
-            capture_output=True, text=True, check=True, cwd=ROOT,
-        )
-        return out.stdout.strip()
+        return _git("rev-parse", "HEAD").stdout.strip()
     except Exception:  # noqa: BLE001
         return None
 
 
-def build(repo_root: Path = ROOT) -> dict:
+# Working-tree paths whose uncommitted changes would make a recorded
+# build_code_commit misleading: build code/config plus the input metadata
+# that drives the build (source tiers, resolutions, artifact inventory).
+# metadata/missing_draws.csv and metadata/reconciliation_registry.csv are
+# build *outputs* and are deliberately not listed here.
+_CODE_PATHS = (
+    "src/",
+    "scripts/",
+    "config/",
+    "tests/",
+    "metadata/source_registry.csv",
+    "metadata/draw_sources.csv",
+    "metadata/draw_resolutions.csv",
+    "metadata/game_regimes.csv",
+    "metadata/raw_artifacts.csv",
+)
+
+
+def _dirty_code_paths() -> list[str]:
+    try:
+        out = _git("status", "--porcelain", "--", *_CODE_PATHS).stdout
+    except Exception:  # noqa: BLE001
+        return ["<git status failed>"]
+    return [ln for ln in out.splitlines() if ln.strip()]
+
+
+_FIELD_ALIAS = {"main_numbers_sorted": "main_numbers"}
+
+
+def _apply_resolutions_to_recon(
+    recon_rows: list[dict],
+    resolutions: dict[tuple, dict],
+) -> None:
+    """Mark conflict rows resolved when an authoritative resolution exists."""
+    for r in recon_rows:
+        if r["classification"] != "CONFLICT":
+            continue
+        field = _FIELD_ALIAS.get(r["field"], r["field"])
+        key = (r["game_id"], date.fromisoformat(r["draw_date"]), field)
+        res = resolutions.get(key)
+        if res:
+            r["resolution"] = res["resolution"]
+            r["resolution_evidence"] = res["resolution_evidence"]
+            r["status"] = "resolved"
+            r["notes"] = res.get("notes", "")
+
+
+def build(repo_root: Path = ROOT, *, release: bool = False) -> dict:
+    if release:
+        dirty = _dirty_code_paths()
+        if dirty:
+            raise RuntimeError(
+                "release build refused: uncommitted changes under "
+                f"{_CODE_PATHS}: {dirty[:5]}"
+            )
     artifacts = load_csv(repo_root / "metadata/raw_artifacts.csv", RawArtifact)
     regimes = load_csv(repo_root / "metadata/game_regimes.csv", GameRegime)
+    tiers = load_source_tiers(repo_root)
+    resolutions = load_resolutions(repo_root)
 
     staged = parse_artifacts(artifacts)
-    groups, recon_rows = reconcile_groups(staged)
-    draws, errors, conflict_keys = build_canonical(groups, regimes)
+    groups, recon_rows = reconcile_groups(staged, tiers)
+    _apply_resolutions_to_recon(recon_rows, resolutions)
+    draws, errors, conflict_keys = build_canonical(
+        groups, regimes, tiers, resolutions
+    )
     violations = structural_validate(draws, regimes)
-    apply_eligibility(draws, conflict_keys, regimes)
+    ineligible_reasons = apply_eligibility(draws, conflict_keys, regimes, tiers)
 
     # schedule completeness over main-stream canonical draws
     observed: dict[str, set[date]] = {}
@@ -175,6 +251,7 @@ def build(repo_root: Path = ROOT) -> dict:
         )
         for metric, pred in [
             ("analysis_eligible", lambda d: d.analysis_eligible),
+            ("analysis_ineligible", lambda d: not d.analysis_eligible),
             ("rejected", lambda d: d.validation_status.value == "rejected"),
             ("quarantined", lambda d: d.validation_status.value == "quarantined"),
             ("double_play_stream", lambda d: d.draw_stream.value == "double_play"),
@@ -199,7 +276,8 @@ def build(repo_root: Path = ROOT) -> dict:
         draws=draws,
         artifact_shas=artifact_shas,
         dataset_sha=dsha,
-        git_commit=_git_commit(),
+        build_code_commit=_git_commit(),
+        ineligible_reasons=ineligible_reasons,
     )
     return {
         "staged": len(staged),
@@ -223,6 +301,13 @@ def main() -> int:
     ap.add_argument(
         "--fetch", action="store_true", help="re-fetch live sources first"
     )
+    ap.add_argument(
+        "--release",
+        action="store_true",
+        help="release build: refuse if uncommitted changes exist under "
+        "src/, scripts/, config/, tests/ (build_code_commit must name the "
+        "exact code state that produced the dataset)",
+    )
     args = ap.parse_args()
     if args.fetch:
         print("fetching live sources...")
@@ -233,7 +318,7 @@ def main() -> int:
         if rc != 0:
             print("fetch failures — see output above")
             return rc
-    res = build()
+    res = build(release=args.release)
     print(
         f"staged={res['staged']} draws={res['draws']} eligible={res['eligible']} "
         f"violations={res['violations']} conflicts={res['conflicts']} "

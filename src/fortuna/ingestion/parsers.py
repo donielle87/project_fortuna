@@ -399,3 +399,112 @@ def parse_fl_history_lines(
         )
         out.append(rec)
     return out
+
+
+def parse_wi_powerball_csv(content: bytes, artifact) -> list[StagedDraw]:
+    """Wisconsin Lottery official CSV export (dir=drawn => physical order).
+
+    Layout: date, n1..n5, PB, "Power Play" ('3x' or ' '), jackpot ('$389.00M').
+    """
+    text = content.decode("utf-8-sig", "replace")
+    out: list[StagedDraw] = []
+    for row in csv.reader(io.StringIO(text)):
+        if len(row) < 9:
+            continue
+        try:
+            d = date.fromisoformat(row[0].strip())
+        except ValueError:
+            continue
+        try:
+            nums = [int(row[i]) for i in range(1, 6)]
+            pb = int(row[6])
+        except ValueError:
+            continue
+        mult = None
+        if len(row) > 7:
+            mm = re.search(r"(\d+)", row[7] or "")
+            if mm:
+                mult = float(mm.group(1))
+        jackpot = None
+        if len(row) > 8:
+            jm = re.search(r"\$([\d.]+)M", row[8] or "")
+            if jm:
+                jackpot = Decimal(jm.group(1)) * 1_000_000
+        out.append(
+            StagedDraw(
+                game_id="powerball",
+                draw_date=d,
+                main_numbers=nums,
+                special_ball=pb,
+                multiplier=mult,
+                jackpot=jackpot,
+                numbers_order=OrderSemantics.PHYSICAL_DRAW_ORDER,
+                **_artifact_ctx(artifact),
+            )
+        )
+    return out
+
+
+_MD_ROW_RE = re.compile(
+    r'<td class="date">(\d{2})/(\d{2})/(\d{2})</td>'
+    r'<td class="numbers"><ul class="balls">(.*?)</ul></td>'
+    r'<td class="bonus"><ul class="balls"><li[^>]*>(\d+)</li></ul></td>'
+    r'<td class="multiplier">([^<]*)</td>',
+    re.S,
+)
+
+
+def parse_md_archive_html(
+    content: bytes, artifact, *, game_id: str
+) -> list[StagedDraw]:
+    """Maryland Lottery winning-number archive HTML (sorted order)."""
+    text = content.decode("utf-8", "replace")
+    out: list[StagedDraw] = []
+    for m in _MD_ROW_RE.finditer(text):
+        mm, dd, yy, ball_block, bonus, mult = m.groups()
+        nums = [int(x) for x in re.findall(r"<li>(\d+)</li>", ball_block)]
+        if len(nums) != 5:
+            continue
+        mv = mult.strip()
+        out.append(
+            StagedDraw(
+                game_id=game_id,
+                draw_date=date(_yy2(yy), int(mm), int(dd)),
+                main_numbers=nums,
+                special_ball=int(bonus),
+                multiplier=(
+                    float(mv.lstrip("xX"))
+                    if mv not in ("N/A", "", "x")
+                    else None
+                ),
+                numbers_order=OrderSemantics.SOURCE_SORTED_ORDER,
+                **_artifact_ctx(artifact),
+            )
+        )
+    return out
+
+
+def parse_mm_com_api(content: bytes, artifact) -> list[StagedDraw]:
+    """Official Mega Millions operator API page (sorted order).
+
+    Response: {"d": "<json>"} where inner JSON has DrawingData rows with
+    PlayDate, N1..N5, MBall, Megaplier (-1 = none).
+    """
+    payload = json.loads(content)
+    inner = json.loads(payload["d"])
+    out: list[StagedDraw] = []
+    for r in inner.get("DrawingData", []):
+        d = datetime.fromisoformat(r["PlayDate"]).date()
+        mp = r.get("Megaplier")
+        out.append(
+            StagedDraw(
+                game_id="mega_millions",
+                draw_date=d,
+                main_numbers=[r["N1"], r["N2"], r["N3"], r["N4"], r["N5"]],
+                special_ball=int(r["MBall"]),
+                multiplier=float(mp) if mp is not None and mp > 0 else None,
+                numbers_order=OrderSemantics.SOURCE_SORTED_ORDER,
+                **_artifact_ctx(artifact),
+            )
+        )
+    return out

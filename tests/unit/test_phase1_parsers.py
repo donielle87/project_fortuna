@@ -7,6 +7,7 @@ from fortuna.ingestion.pipeline import (
     build_canonical,
     canonical_draw_id,
     reconcile_groups,
+    structural_validate,
 )
 from fortuna.ingestion.staging import StagedDraw
 from fortuna.schemas.artifacts import RawArtifact
@@ -283,3 +284,125 @@ def test_quarantined_draw_status(regimes):
     assert draws[0].validation_status == DrawValidationStatus.QUARANTINED
     apply_eligibility(draws, set(), [*regimes, reg])
     assert draws[0].analysis_eligible is False
+
+
+# ---------- Source-authority gate (Phase 1 corrective) ----------
+
+TIERS = {
+    "SRC-WI-PB-CSV": 1,
+    "SRC-MO-PB-XLSX": 1,
+    "SRC-TX-PB-CSV": 1,
+    "SRC-NY-PB-DATA": 2,
+    "SRC-NY-PB-ARCHIVE": 3,
+    "SRC-NY-MM-ARCHIVE": 3,
+}
+
+
+def test_tier3_only_draw_is_ineligible(regimes):
+    a = _staged(nums=(1, 2, 3, 4, 5), sb=10, src="SRC-NY-PB-ARCHIVE")
+    groups, _ = reconcile_groups([a], TIERS)
+    draws, _, ckeys = build_canonical(groups, regimes, TIERS)
+    reasons = apply_eligibility(draws, ckeys, regimes, TIERS)
+    assert draws[0].analysis_eligible is False
+    assert "unofficial_source_only" in reasons[draws[0].draw_id]
+
+
+def test_tier3_divergence_does_not_block_authoritative_draw(regimes):
+    wi = _staged(nums=(1, 2, 3, 4, 5), sb=10, src="SRC-WI-PB-CSV")
+    ny = _staged(nums=(1, 2, 3, 4, 5), sb=11, src="SRC-NY-PB-ARCHIVE")
+    groups, rows = reconcile_groups([ny, wi], TIERS)  # staged order irrelevant
+    draws, _, ckeys = build_canonical(groups, regimes, TIERS)
+    structural_validate(draws, regimes)
+    reasons = apply_eligibility(draws, ckeys, regimes, TIERS)
+    d = draws[0]
+    assert d.analysis_eligible is True
+    assert d.draw_id not in reasons
+    assert d.source_id == "SRC-WI-PB-CSV"          # authoritative primary wins
+    assert d.special_ball == 10
+    assert "SRC-NY-PB-ARCHIVE" in d.corroborating_source_ids
+    conf = [r for r in rows if r["classification"] == "CONFLICT"]
+    assert conf and all(r["status"] == "resolved" for r in conf)
+
+
+def test_authoritative_conflict_still_blocks(regimes):
+    wi = _staged(nums=(1, 2, 3, 4, 5), sb=10, src="SRC-WI-PB-CSV")
+    mo = _staged(nums=(1, 2, 3, 4, 5), sb=11, src="SRC-MO-PB-XLSX")
+    groups, _ = reconcile_groups([wi, mo], TIERS)
+    draws, _, ckeys = build_canonical(groups, regimes, TIERS)
+    reasons = apply_eligibility(draws, ckeys, regimes, TIERS)
+    assert draws[0].analysis_eligible is False
+    assert "unresolved_conflict" in reasons[draws[0].draw_id]
+
+
+def test_official_resolution_applies_canonical_value(regimes):
+    wi = _staged(nums=(1, 2, 3, 4, 5), sb=10, src="SRC-WI-PB-CSV")
+    mo = _staged(nums=(1, 2, 3, 4, 5), sb=11, src="SRC-MO-PB-XLSX")
+    res = {
+        ("powerball", date(2020, 1, 4), "special_ball"): {
+            "resolved_value": "10",
+            "resolution": "first-party operator record controls",
+            "resolution_evidence": "test",
+            "status": "resolved",
+        }
+    }
+    groups, _ = reconcile_groups([wi, mo], TIERS)
+    draws, _, ckeys = build_canonical(groups, regimes, TIERS, res)
+    structural_validate(draws, regimes)
+    apply_eligibility(draws, ckeys, regimes, TIERS)
+    assert draws[0].analysis_eligible is True
+    assert draws[0].special_ball == 10
+    assert not ckeys
+
+
+def test_wi_csv_parser_drawn_order():
+    content = (
+        b'"Wisconsin Lottery - Powerball Winning Numbers - Order Drawn"\n'
+        b'"Draw Date",,,,,,PB,"Power Play","Est. Jackpot"\n'
+        b"1992-04-22,49,42,21,29,17,8,3x,$389.00M\n"
+    )
+    recs = parsers.parse_wi_powerball_csv(content, _art("SRC-WI-PB-CSV"))
+    assert len(recs) == 1
+    r = recs[0]
+    assert r.draw_date == date(1992, 4, 22)
+    assert r.main_numbers == [49, 42, 21, 29, 17]
+    assert r.special_ball == 8 and r.multiplier == 3.0
+    assert r.jackpot == 389_000_000
+    assert r.numbers_order == OrderSemantics.PHYSICAL_DRAW_ORDER
+
+
+def test_md_archive_html_parser():
+    html = (
+        b'<tr><td class="date">09/06/96</td>'
+        b'<td class="numbers"><ul class="balls"><li>5</li><li>11</li>'
+        b'<li>29</li><li>47</li><li>50</li></ul></td>'
+        b'<td class="bonus"><ul class="balls"><li>6</li></ul></td>'
+        b'<td class="multiplier">N/A</td></tr>'
+    )
+    recs = parsers.parse_md_archive_html(
+        html, _art("SRC-MD-MM-ARCHIVE"), game_id="mega_millions"
+    )
+    assert len(recs) == 1
+    assert recs[0].draw_date == date(1996, 9, 6)
+    assert recs[0].main_numbers == [5, 11, 29, 47, 50]
+    assert recs[0].special_ball == 6
+
+
+def test_mm_com_api_parser():
+    import json as _json
+
+    inner = _json.dumps(
+        {
+            "DrawingData": [
+                {
+                    "PlayDate": "2011-09-23T00:00:00",
+                    "N1": 21, "N2": 27, "N3": 32, "N4": 40, "N5": 52,
+                    "MBall": "36", "Megaplier": -1,
+                }
+            ]
+        }
+    )
+    content = _json.dumps({"d": inner}).encode()
+    recs = parsers.parse_mm_com_api(content, _art("SRC-MM-COM-API"))
+    assert len(recs) == 1
+    assert recs[0].main_numbers == [21, 27, 32, 40, 52]
+    assert recs[0].special_ball == 36 and recs[0].multiplier is None
