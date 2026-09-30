@@ -1,1 +1,6 @@
 model_id,registered_date,game_id,statistical_regime_id,description,training_window,code_version,evaluation_protocol,status,notes
+F-M000,2026-10-07,all,all,Fair-uniform benchmark: P(S)=1/C(N,K); special ball 1/M,none,,strict_walk_forward,specified,Frozen benchmark for F-E005; never trained.
+F-M001,2026-10-07,all,all,Shrunk expanding frequency: w_i prop c_i + 100*(K/N); special analogous,expanding from draw 1; warmup 100,,strict_walk_forward,specified,Frozen pseudo-draw strength 100.
+F-M002,2026-10-07,all,all,EWMA frequency hl=50 shrunk to uniform with pseudo strength 25,expanding from draw 1; warmup 100,,strict_walk_forward,specified,Frozen half-life and shrinkage.
+F-M003,2026-10-07,all,all,Single-coefficient gap model on exact weighted K-subset distribution; L2 in {0.1 1 10 100} nested chronological,expanding; warmup 100; refit every 25 scored,,strict_walk_forward,specified,Gap sign learned from prior data only.
+F-M004,2026-10-07,all,all,Six-feature penalized subset model (freq/ewma/gap/prev/affinity) + 5-feature softmax special model,expanding; warmup 100; refit every 25 scored,,strict_walk_forward,specified,Frozen feature set and penalty grid.

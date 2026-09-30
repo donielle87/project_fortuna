@@ -1,0 +1,223 @@
+# F-E005 — Finite Predictive Walk-Forward Benchmark (Phase 4A)
+#
+# FROZEN. Every quantity here is fixed before any walk-forward
+# performance is calculated. No model, feature, grid, threshold, or
+# rule below may be altered after F-E005 results are observed.
+
+experiment_id: F-E005
+title: Finite Predictive Walk-Forward Benchmark
+classification: predictive_research_exploratory
+
+# ---------------- pinned inputs ----------------
+accepted_phase1_dataset_sha256:
+  200174427b4abcc6bcc0aa3761174db237ae52e266e88cfc88bae39f27c138ff
+phase2_v4_observation_plan_sha256:
+  8309e1dd673e339b66b1fae09d02a0f2b205a62ada2882c1590645d1bf2ac10a
+exploration_ids_path: metadata/phase3_exploration_ids_v2.csv
+holdout_ids_path: metadata/phase3_holdout_ids.csv
+holdout_seal_path: metadata/phase3_holdout_seal_v2.json
+expected_holdout_seal_v2:
+  6dc9a023b4bfd7b7fcfa321ebde9455687222eb0ef316a458d0d01effe18f2e0
+expected_holdout_seal_v1:
+  6cb7c382924c4ad55ab0958239cb488cd95b0e0b99407ebebcfe822a4b16b91c
+
+data_firewall:
+  outcome_parsing: exploration_ids_only      # filter on draw_id BEFORE
+                                             # any outcome field is read
+  holdout_outcomes: forbidden
+  future_draws_after_cutoff: forbidden
+  regime_discipline: same_statistical_regime_only
+
+rng:
+  root_seed: 20261007
+  generator: PCG64DXSM
+  stream_scope_prefix: "F-E005"   # used ONLY for synthetic controls;
+                                # walk-forward evaluation is deterministic
+
+# ---------------- model family (frozen) ----------------
+model_family: F-M000..F-M004
+
+models:
+  F-M000:
+    kind: uniform
+    main: all weights w_i = 1 -> P(S) = 1/C(N,K)
+    special: uniform 1/M
+
+  F-M001:
+    kind: shrunk_expanding_frequency
+    main: w_i = c_i + A*p with A = 100 pseudo-draws, p = K/N
+    prior_strength_draws: 100
+    special: p_i = (c_i + A/M) / (n + A), A = 100
+
+  F-M002:
+    kind: ewma_frequency
+    half_life_draws: 50           # lambda = 2^(-1/50), frozen
+    main: w_i = ewma_i + A*p with A = 25 decay-weight units, p = K/N
+    pseudo_strength: 25
+    special: p_i prop ewma_i + A/M, A = 25
+
+  F-M003:
+    kind: gap_regression
+    features_main: [gap_z]        # single coefficient; sign learned
+    features_special: [gap_z]
+    score_clip: 8.0               # w_i = exp(clip(score, +-8))
+    l2_grid: [0.1, 1.0, 10.0, 100.0]
+
+  F-M004:
+    kind: regularized_multifeature
+    features_main:
+      - expanding_freq_z          # (c - n*K/N)/sqrt(n*K/N(1-K/N))
+      - ewma25_z                  # EWMA hl=25 rate residual, n_eff-scaled
+      - ewma100_z                 # EWMA hl=100 rate residual
+      - gap_z                     # log1p(gap) standardized vs
+                                  # fair-geometric null moments
+      - prev_draw_indicator       # i in previous draw
+      - affinity_prev             # smoothed co-occurrence excess vs
+                                  # previous draw's balls; pseudo a0 = 50
+    features_special:
+      - expanding_freq_z
+      - ewma25_z
+      - ewma100_z
+      - gap_z
+      - prev_special_indicator
+    affinity_pseudo_draws: 50
+    score_clip: 8.0
+    l2_grid: [0.1, 1.0, 10.0, 100.0]
+
+# ---------------- training rules (frozen) ----------------
+training:
+  warmup_min_prior_draws: 100     # per statistical regime; no backfill
+  refit_cadence_scored_draws: 25  # F-M003/F-M004; F-M001/F-M002 update
+                                  # deterministically every draw
+  fit:
+    objective: penalized conditional log-likelihood of the exact
+      weighted K-subset distribution (main) / multinomial logit
+      (special)
+    optimizer: adam
+    lr: 0.05
+    iterations: 150
+    beta_init: zeros
+  nested_penalty_selection:
+    inner_fit_fraction: 0.8       # chronological FIRST 80%
+    inner_validation_fraction: 0.2  # chronological LAST 20%
+    min_inner_fit_draws: 50       # else fallback
+    fallback_penalty: 100.0
+    tie_break: stronger_penalty
+    cross_validation: never       # chronological inner split only;
+                                  # no shuffling, no random folds
+
+# ---------------- scoring (frozen) ----------------
+scoring:
+  primary: exact set log loss, per-draw difference
+    d_t = logP_model(actual) - logP_uniform(actual)
+  also_report: [special_log_score, joint_log_score]
+  summaries: [mean, median, cumulative, standard_error, ci95]
+  strata: [pooled_exploration, regime, game]
+
+evalues:
+  definition: E = prod_t P_model(Y_t|past)/P_uniform(Y_t) over all
+    scored draws; joint outcome (main+special) where a special ball
+    exists, main-only otherwise; computed in log space
+  individual_gate: 80             # 4/0.05 family-adjusted screen
+  family_mixture_definition: "E_mix = mean(E_001..E_004)"
+  mixture_gate: 20
+  note: both reported; neither replaces the predictive gate
+
+# ---------------- candidate pools (evaluation only) ----------------
+candidate_pools:
+  sizes: [10, 15, 20]             # applied only when m < N
+  ranking: model marginal inclusion probability (pre-draw)
+  primary_m: 15
+  metrics: [mean_hits, P_ge3, P_ge4, P_ge5_k6, hypergeometric_exact,
+            observed_over_random_lift, ci95_paired]
+  all_but_one_target: ">=4 hits (K=5) / >=5 hits (K=6)"
+  practical_lift_threshold: 0.02  # m=15 relative mean-hit lift
+  recommendation_use: forbidden
+
+special_metrics:
+  top1: probability and rank of actual special ball vs 1/M
+  top5: containment indicator vs 5/M
+
+# ---------------- stability (frozen) ----------------
+stability:
+  min_scored_per_regime: 50
+  positive_regime_fraction_required: 0.60
+  concentration_limit: 0.50       # max share of pooled positive gain
+                                  # from one regime
+
+# ---------------- predictive gate (frozen; not weakened) ----------------
+predictive_gate:
+  all_conditions_required: true
+  conditions:
+    1_positive_pooled_logscore: "pooled cumulative d_main > 0"
+    2_evalue: "E_model >= 80"
+    3_mixture_evalue: "E_mix >= 20"
+    4_regime_positive_fraction: "positive mean d_main in >=60% of regimes
+      with >=50 scored predictions"
+    5_concentration: "no single regime contributes >50% of total positive
+      log-score gain"
+    6_m15_lift: "m=15 relative mean-hit lift >= 0.02 vs exact
+      hypergeometric expectation"
+    7_m15_ci: "paired 95% CI for m=15 absolute hit improvement excludes
+      zero"
+    8_no_leakage: "no identified leakage/provenance defect"
+    9_synthetic_controls: "implementation passes positive and null
+      synthetic controls"
+  multiple_pass_selection:
+    "1": "highest cumulative out-of-sample main-set log-score improvement"
+    "2": "higher m=15 mean-hit lift"
+    "3": "simpler lower-numbered model"
+  max_candidates: 1
+  no_pass_consequence: "HISTORICAL_PREDICTIVE_EDGE_SEARCH_TERMINATED"
+
+# ---------------- synthetic controls (frozen) ----------------
+synthetic_controls:
+  matrix: {N: 35, K: 5, M: 10}
+  history_length: 500
+  warmup: 100
+  positive_scenarios:
+    A_persistent_weight_bias:
+      description: fixed nonuniform w, boosted ball subset x(1+delta)
+      deltas: [0.5, 1.0, 2.0]
+      boosted_balls: 7
+    B_recency_gap_bias:
+      description: w_i prop exp(beta_g * gap_z_i), overdue advantage
+      betas: [0.5, 1.0, 2.0]
+    C_previous_draw_bias:
+      description: w_i prop exp(beta_p * 1{i in S_{t-1}})
+      betas: [0.5, 1.0, 2.0]
+    D_time_varying_bias:
+      description: boosted 7-ball subset rotates every 100 draws
+      deltas: [1.0, 2.0, 4.0]
+  positive_pass: at least one frozen model produces positive
+    walk-forward pooled log-score lift AND m=15 lift >= 0.02 at the
+    strongest injected effect, per scenario
+  null_replicates: 10
+  null_pass: no model clears the full predictive gate in any null
+    replicate; pooled mean d_main does not systematically exceed a
+    sampling-noise band
+  generation: sequential proportional without-replacement
+    (Efraimidis-Spirakis keys) for biased scenarios; uniform
+    without-replacement for null
+
+# ---------------- stopping rule (frozen) ----------------
+stopping_rule:
+  authorized_scope: F-M000..F-M004 only
+  if_no_model_passes_gate: HISTORICAL_PREDICTIVE-EDGE SEARCH TERMINATES
+  prohibited_after_results:
+    - additional model families
+    - additional hyperparameter grids
+    - transformers / random forests / new neural networks
+    - genetic algorithms
+    - Fourier features / astrology-like transforms
+    - new recency heuristics
+    - post-hoc ensembles
+    - lottery-specific tricks
+
+# ---------------- provenance bookkeeping (Task 0) ----------------
+f_e004_provenance_note: >
+  F-E004 scientific outputs are pinned to the analysis-code commit
+  recorded in data/analysis/phase3b/phase3b_manifest.json. Repository
+  HEAD at F-E005 start (7de9bd9) includes the later CSV
+  schema-normalization patch. Exact F-E004 reproduction uses the
+  manifest-pinned code state, not necessarily current HEAD.
