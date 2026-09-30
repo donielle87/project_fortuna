@@ -1,0 +1,57 @@
+# F-E001 — Phase 2 fair-random null model + Monte Carlo baseline.
+# FROZEN at phase2_preregistration_commit. Do not edit after baseline
+# generation; defects require a decision-log entry + superseding version.
+experiment_id: F-E001
+phase: 2
+title: Fair-random null model and Monte Carlo baseline
+
+accepted_phase1_dataset_sha256: >-
+  953c0701aeef6782a361146999ca43c1d4d2863d807c8e4dbe39cfa4108f3891
+
+rng:
+  algorithm: PCG64DXSM          # numpy.random.Generator(PCG64DXSM)
+  root_seed: 20260930
+  # child streams: SeedSequence([root_seed, H]) where
+  # H = first 128 bits of SHA-256("F-E001|<scope-string>") as a big-endian int.
+  # scope-string = "game|statistical_regime|statistic_id|batch" (batch only
+  # where applicable). Independent of execution order and platform.
+  child_derivation: sha256-scope-v1
+
+monte_carlo:
+  replicates_per_statistic_regime: 20000
+  batches: 4
+  replicates_per_batch: 5000
+  streaming: true               # statistics accumulated; raw draws not kept
+
+# Convergence: for each regime x statistic, compare the 4 batch estimates of
+# {mean, variance, q90, q95, q99} against the pooled 20k estimate.
+# CONVERGED iff for every metric m: max_b |m_b - m_pool| <=
+#   max(4 * se_pool_m, atol_m)
+# se_pool_mean = pooled_std / sqrt(20000)
+# se_pool_var  = sqrt((mu4_pool - var_pool^2) / 20000)
+# se_pool_q_p  = sqrt(p(1-p)) / (fhat(q_p) * sqrt(20000)), fhat by spacing
+# atol_m = 1e-6 * max(1, |m_pool|)   (degenerate-statistic floor)
+# Otherwise the statistic is marked NOT CONVERGED (never relabeled PASS).
+convergence:
+  sigma_factor: 4.0
+  atol_rel: 0.000001
+
+# Validation draws for simulator-vs-exact checks (per regime, separate child
+# scope "VALIDATION"): 200,000 independent fair draws.
+validation:
+  draws_per_regime: 200000
+  sigma_factor: 5.0             # |sim - exact| <= 5 * binomial/normal SE
+
+eligibility:
+  draw_stream: main             # Double Play never mixed in
+  analysis_eligible: true       # Phase 1 gate already applied
+
+# Sequential statistics never bridge missing/ineligible/quarantined dates;
+# replicate histories are built as the frozen contiguous segment lengths.
+sequential_breaks: exclude_positions
+
+statistics_catalog_version: "1.0"
+
+histogram_bins:
+  integer_stats: exact          # counts stored as exact integer histograms
+  continuous_stats: adaptive    # stored as quantiles + moments only

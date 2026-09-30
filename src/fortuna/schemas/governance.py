@@ -38,8 +38,8 @@ class Experiment(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    experiment_id: str = Field(pattern=r"^EXP-\d{3}$")
-    hypothesis_ids: list[str]
+    experiment_id: str = Field(pattern=r"^(EXP-\d{3}|F-E\d{3})$")
+    hypothesis_ids: list[str] = Field(default_factory=list)
     registered_date: date
     executed_date: date | None = None
     code_version: str | None = Field(default=None, description="git SHA")
@@ -56,6 +56,8 @@ class Experiment(BaseModel):
     def _split(cls, v: object) -> object:
         if isinstance(v, str):
             return parse_list(v)
+        if v is None:
+            return []
         return v
 
 
