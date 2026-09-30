@@ -591,9 +591,20 @@ def main() -> int:
          "window_start_draw_id", "position", "ball", "max_abs_z",
          "selected_identity_note"],
     )
+    equip_fields = [
+        "statistical_regime_id", "field", "status",
+        "n_populated", "n_categories", "n_eligible_categories",
+        "n_included_draws", "categories", "sufficient",
+        "observed_T", "perm_mean", "perm_sd", "z", "raw_p",
+        "n_permutations",
+    ]
+    equip_rows_all = [
+        {k: r.get(k, "") for k in equip_fields}
+        for r in (equip_suff_rows + equip_rows)
+    ]
     hashes["phase3b_equipment_diagnostics.csv"] = _write_csv(
         OUT / "phase3b_equipment_diagnostics.csv",
-        equip_suff_rows + equip_rows,
+        equip_rows_all, equip_fields,
     )
     hashes["phase3b_primary_pvalues.csv"] = _write_csv(
         OUT / "phase3b_primary_pvalues.csv", prim_rows
