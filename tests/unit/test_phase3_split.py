@@ -13,8 +13,6 @@ from fortuna.analysis.split import (
     holdout_seal_sha256,
     split_policy_sha256,
 )
-from fortuna.schemas.csv_io import load_csv
-from fortuna.schemas.regimes import GameRegime
 from fortuna.simulation.observation import load_draw_metadata
 
 ROOT = Path(__file__).resolve().parents[2]

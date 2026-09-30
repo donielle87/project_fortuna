@@ -14,7 +14,9 @@ from fortuna.analysis.loader import (
 ROOT = Path(__file__).resolve().parents[2]
 DRAWS = ROOT / "data/processed/draws.csv"
 DRAWNUMS = ROOT / "data/processed/draw_numbers.csv"
-EXPL = ROOT / "metadata/phase3_exploration_ids.csv"
+# Corrected (F-E003) exploration population: original IDs INTERSECT
+# corrected eligible draws.
+EXPL = ROOT / "metadata/phase3_exploration_ids_v2.csv"
 
 
 def _expl_ids() -> set[str]:
@@ -28,14 +30,15 @@ def _write_fake_store(tmp_path: Path) -> tuple[Path, Path]:
     draws.write_text(
         "draw_id,game_id,regime_id,draw_date,scheduled_datetime,"
         "drawing_identifier,draw_stream,main_numbers,numbers_order,"
+        "number_sequence_source_id,"
         "special_ball,multiplier,jackpot,jackpot_cash_value,jackpot_winners,"
         "drawing_location,machine_id,ball_set_id,source_id,retrieved_at,"
         "raw_artifact_sha256,parser_version,ingestion_version,"
         "validation_status,analysis_eligible,provisional,data_quality_notes,"
         "corroborating_source_ids\n"
-        "E1,g,R,2020-01-01,,,main,1;2;3;4;5,physical_draw_order,7,,,,,,,,,,,,valid,true,false,,\n"
-        "E2,g,R,2020-01-02,,,main,6;7;8;9;10,physical_draw_order,11,,,,,,,,,,,,valid,true,false,,\n"
-        "H1,g,R,2020-01-03,,,main,TRAP_FIELD,physical_draw_order,TRAP,,,,,,,,,,,,valid,true,false,,\n"
+        "E1,g,R,2020-01-01,,,main,1;2;3;4;5,physical_draw_order,SRC-X,7,,,,,,,,,,,,valid,true,false,,\n"
+        "E2,g,R,2020-01-02,,,main,6;7;8;9;10,physical_draw_order,SRC-X,11,,,,,,,,,,,,valid,true,false,,\n"
+        "H1,g,R,2020-01-03,,,main,TRAP_FIELD,physical_draw_order,SRC-X,TRAP,,,,,,,,,,,,valid,true,false,,\n"
     )
     nums = tmp_path / "draw_numbers.csv"
     nums.write_text(
@@ -89,7 +92,7 @@ def test_sorted_order_not_used_for_physical(tmp_path):
         f.write("E3,1,main,1,source_sorted_order\n")
     with draws.open("a") as f:
         f.write(
-            "E3,g,R,2020-01-04,,,main,1;2;3;4;5,source_sorted_order,,,,,,,,,,,,,valid,true,false,,\n"
+            "E3,g,R,2020-01-04,,,main,1;2;3;4;5,source_sorted_order,SRC-X,,,,,,,,,,,,,valid,true,false,,\n"
         )
     order = load_exploration_physical_order(nums, {"E1", "E2", "E3"})
     assert "E3" not in order  # sorted order never substituted
@@ -98,7 +101,7 @@ def test_sorted_order_not_used_for_physical(tmp_path):
 def test_real_exploration_loads_cleanly():
     ids = _expl_ids()
     draws = load_exploration_draws(DRAWS, ids)
-    assert len(draws) == len(ids) == 8260
+    assert len(draws) == len(ids) == 8248
     for d in draws[:200]:
         assert all(isinstance(x, int) for x in d.mains)
         assert len(d.mains) in (5, 6)

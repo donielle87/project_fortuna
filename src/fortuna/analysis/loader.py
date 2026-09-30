@@ -70,6 +70,14 @@ def load_exploration_draws(
             special = (
                 int(row["special_ball"]) if row["special_ball"] else None
             )
+            # D-007 atomicity: a physical-order label is admissible only
+            # when the row names the staged source that supplied the
+            # stored sequence.
+            if row["numbers_order"] == "physical_draw_order":
+                assert row["number_sequence_source_id"], (
+                    f"{row['draw_id']}: physical_draw_order without "
+                    "number_sequence_source_id"
+                )
             out.append(
                 ExplorationDraw(
                     draw_id=row["draw_id"],
