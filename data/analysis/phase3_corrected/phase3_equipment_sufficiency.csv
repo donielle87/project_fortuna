@@ -1,0 +1,33 @@
+statistical_regime_id,field,n_populated,n_categories,n_eligible_categories,n_included_draws,categories,sufficient
+FL-S01,machine_id,0,0,0,0,{},False
+FL-S01,ball_set_id,0,0,0,0,{},False
+FL-S02,machine_id,1208,6,3,1174,"{""1"": 396, ""3"": 391, ""2"": 387, ""4"": 19, ""5"": 14, ""6"": 1}",True
+FL-S02,ball_set_id,1208,10,6,1203,"{""E"": 214, ""B"": 210, ""F"": 205, ""A"": 200, ""C"": 189, ""D"": 185, ""G"": 2, ""H"": 1, ""2"": 1, ""I"": 1}",True
+MM-S01,machine_id,0,0,0,0,{},False
+MM-S01,ball_set_id,0,0,0,0,{},False
+MM-S02,machine_id,0,0,0,0,{},False
+MM-S02,ball_set_id,0,0,0,0,{},False
+MM-S03,machine_id,0,0,0,0,{},False
+MM-S03,ball_set_id,0,0,0,0,{},False
+MM-S04,machine_id,0,0,0,0,{},False
+MM-S04,ball_set_id,0,0,0,0,{},False
+MM-S05,machine_id,0,0,0,0,{},False
+MM-S05,ball_set_id,0,0,0,0,{},False
+MM-S06,machine_id,0,0,0,0,{},False
+MM-S06,ball_set_id,0,0,0,0,{},False
+MM-S07,machine_id,0,0,0,0,{},False
+MM-S07,ball_set_id,0,0,0,0,{},False
+PB-S01,machine_id,0,0,0,0,{},False
+PB-S01,ball_set_id,0,0,0,0,{},False
+PB-S02,machine_id,0,0,0,0,{},False
+PB-S02,ball_set_id,0,0,0,0,{},False
+PB-S03,machine_id,0,0,0,0,{},False
+PB-S03,ball_set_id,0,0,0,0,{},False
+PB-S04,machine_id,0,0,0,0,{},False
+PB-S04,ball_set_id,0,0,0,0,{},False
+PB-S05,machine_id,0,0,0,0,{},False
+PB-S05,ball_set_id,0,0,0,0,{},False
+PB-S06,machine_id,0,0,0,0,{},False
+PB-S06,ball_set_id,0,0,0,0,{},False
+PB-S07,machine_id,0,0,0,0,{},False
+PB-S07,ball_set_id,0,0,0,0,{},False

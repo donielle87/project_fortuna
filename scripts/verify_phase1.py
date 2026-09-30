@@ -144,8 +144,15 @@ def main() -> int:
     pre = [d for d in fl if d.draw_date < date(2005, 2, 2)]
     post = [d for d in fl if d.draw_date >= date(2005, 2, 2)]
     check(
-        all(d.numbers_order.value == "physical_draw_order" for d in pre),
-        "FL Lotto pre-2005-02-02 rows physical order",
+        all(
+            d.numbers_order.value in ("physical_draw_order", "unknown_order")
+            for d in pre
+        ),
+        "FL Lotto pre-2005-02-02 rows physical or demoted-unknown order",
+    )
+    check(
+        any(d.numbers_order.value == "physical_draw_order" for d in pre),
+        "FL Lotto pre-2005-02-02 physical-order coverage retained",
     )
     check(
         all(d.numbers_order.value == "source_sorted_order" for d in post),
@@ -298,12 +305,12 @@ def main() -> int:
     )
     check(
         all(
-            "excluded_non_draw_artifact" in (d.data_quality_notes or "")
+            "excluded per draw_exclusions.csv" in (d.data_quality_notes or "")
             for did in exclusions
             for d in [by_draw_id[did]]
             if did in by_draw_id
         ),
-        "excluded draws carry excluded_non_draw_artifact reason",
+        "excluded draws carry ledger-exclusion reason",
     )
 
     # manifest

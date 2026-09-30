@@ -1,0 +1,186 @@
+{
+  "phase": 3,
+  "experiment_id": "F-E003",
+  "corrects": "F-E002 (immutable; see D-006/D-007/D-008)",
+  "phase3_preregistration_commit": "6edb5987b779f2a73bd6c74969a9fce44796d367",
+  "analysis_code_commit": "7a08f4f0b6309f36939c2f0f2802ee11a8fa36f0",
+  "accepted_phase1_dataset_sha256": "200174427b4abcc6bcc0aa3761174db237ae52e266e88cfc88bae39f27c138ff",
+  "accepted_phase2_commit": "91fe748a5badcee8188a4f309c732a949f8d56df",
+  "observation_plan_sha256": "8309e1dd673e339b66b1fae09d02a0f2b205a62ada2882c1590645d1bf2ac10a",
+  "corrected_exploration_manifest_sha256": "632e43af81e4323ae2d96357f1db8933366ba7aca2f8462b5ac80b58b3d082e7",
+  "holdout_manifest_sha256": "1ad69bc101a88755db92498cc33922917cae3daa5c0b9e12d59530a607efc130",
+  "holdout_seal_sha256_v1": "6cb7c382924c4ad55ab0958239cb488cd95b0e0b99407ebebcfe822a4b16b91c",
+  "holdout_seal_sha256_v2": "6dc9a023b4bfd7b7fcfa321ebde9455687222eb0ef316a458d0d01effe18f2e0",
+  "holdout_population": "frozen original F-E002 IDs",
+  "exploration_counts": {
+    "FL-S01": 479,
+    "FL-S02": 2248,
+    "MM-S01": 134,
+    "MM-S02": 273,
+    "MM-S03": 255,
+    "MM-S04": 695,
+    "MM-S05": 334,
+    "MM-S06": 620,
+    "MM-S07": 124,
+    "PB-S01": 462,
+    "PB-S02": 411,
+    "PB-S03": 241,
+    "PB-S04": 280,
+    "PB-S05": 252,
+    "PB-S06": 310,
+    "PB-S07": 1130
+  },
+  "exploration_removed_counts": {
+    "FL-S01": 0,
+    "FL-S02": 0,
+    "MM-S01": 2,
+    "MM-S02": 0,
+    "MM-S03": 1,
+    "MM-S04": 0,
+    "MM-S05": 6,
+    "MM-S06": 1,
+    "MM-S07": 0,
+    "PB-S01": 0,
+    "PB-S02": 0,
+    "PB-S03": 0,
+    "PB-S04": 0,
+    "PB-S05": 0,
+    "PB-S06": 1,
+    "PB-S07": 1
+  },
+  "holdout_counts": {
+    "FL-S01": 120,
+    "FL-S02": 562,
+    "MM-S01": 35,
+    "MM-S02": 69,
+    "MM-S03": 64,
+    "MM-S04": 174,
+    "MM-S05": 86,
+    "MM-S06": 156,
+    "MM-S07": 31,
+    "PB-S01": 116,
+    "PB-S02": 103,
+    "PB-S03": 61,
+    "PB-S04": 70,
+    "PB-S05": 64,
+    "PB-S06": 78,
+    "PB-S07": 283
+  },
+  "exploration_segment_lengths": {
+    "FL-S01": [
+      479
+    ],
+    "FL-S02": [
+      2248
+    ],
+    "MM-S01": [
+      12,
+      7,
+      52,
+      1,
+      35,
+      27
+    ],
+    "MM-S02": [
+      122,
+      78,
+      10,
+      39,
+      24
+    ],
+    "MM-S03": [
+      6,
+      81,
+      129,
+      8,
+      31
+    ],
+    "MM-S04": [
+      695
+    ],
+    "MM-S05": [
+      25,
+      48,
+      47,
+      161,
+      14,
+      26,
+      13
+    ],
+    "MM-S06": [
+      20,
+      600
+    ],
+    "MM-S07": [
+      124
+    ],
+    "PB-S01": [
+      462
+    ],
+    "PB-S02": [
+      411
+    ],
+    "PB-S03": [
+      241
+    ],
+    "PB-S04": [
+      280
+    ],
+    "PB-S05": [
+      252
+    ],
+    "PB-S06": [
+      232,
+      78
+    ],
+    "PB-S07": [
+      173,
+      957
+    ]
+  },
+  "exclusion_ledger": "metadata/draw_exclusions.csv",
+  "excluded_draw_ids": [
+    "MM-D-1996-11-30",
+    "MM-D-1997-01-23",
+    "MM-D-2002-06-05",
+    "MM-D-2014-01-15",
+    "MM-D-2014-07-02",
+    "MM-D-2014-12-13",
+    "MM-D-2016-06-29",
+    "MM-D-2016-08-17",
+    "MM-D-2016-11-16",
+    "MM-D-2018-01-06",
+    "PB-D-2014-04-06",
+    "PB-D-2017-06-01"
+  ],
+  "root_seed": 20260930,
+  "rng_algorithm": "PCG64DXSM",
+  "primary_replicates": 20000,
+  "secondary_replicates": 20000,
+  "equipment_permutations": 10000,
+  "primary_family": "F-S001..F-S013 applicable x 16 regimes (202)",
+  "secondary_family": "P3-S001..S012 applicable across regimes (one family)",
+  "bh_threshold": 0.1,
+  "holm_threshold": 0.05,
+  "effect_size_threshold": 2.5,
+  "candidate_hypotheses": 0,
+  "flags_artifact_explained": 0,
+  "convergence_status": "NOT CONVERGED",
+  "output_hashes": {
+    "phase3_artifact_diagnostics.csv": "e670cef0de516c606f264e0af534a654849fbcc72d0d60804fef500b3c30952c",
+    "phase3_candidate_hypotheses.csv": "09196853e1fed9600c40944a41b9ad0e65fa3703689f9ee81d52c9d1e49d0d5f",
+    "phase3_equipment_diagnostics.csv": "60857b624f87c187ddd70c5e8a0c32ac45e6531b6c7a64f8c5dabfe832ef205d",
+    "phase3_equipment_sufficiency.csv": "a8b0cf1645fd1e5656d1abb4c9f6781c1cea49dbbc2ce5b5390bf2b488ddfe4c",
+    "phase3_number_frequency_diagnostics.csv": "91bd1658463790161585ddfd761c9a07c189517e9f6053cd4cfd0650ae0cd26e",
+    "phase3_order_diagnostics.csv": "8df370670e62edbe9d31e98ed49dd4beeaa3e7e1bf12a8add23a20d733664320",
+    "phase3_pair_counts.csv": "c70796babd04f736e774e1d1813ab8a23886f1ec695c8d8f43e1b0dbd20759e7",
+    "phase3_primary_pvalues.csv": "a5797c73e7d29fafc55242bc82ccf0cb361c95dcebba787fee3990a5ebbf4d4c",
+    "phase3_primary_statistics.csv": "a25a6f106d62c1bade621af62f1252eb679530aaa14db47145a05d86ee6bde5d",
+    "phase3_secondary_pvalues.csv": "1ef5219dbfbdc3eb741a29a9bc46423db0ca03132fa523925f739fe8697d1f40",
+    "phase3_serial_diagnostics.csv": "195b322acf74033610147cb3c93ae02b84202cc8e68a3ab2d26c45c6d9442507",
+    "phase3_special_frequency_diagnostics.csv": "2065175c00267cd6f1b53023b5a27d4d567d7a43d581c5a77a626844aa83c657",
+    "phase3_structural_diagnostics.csv": "7d82a66589a602a39f8de150656a699f8c7bdf2779a03425595fce9a187cf672",
+    "phase3_triple_diagnostics.csv": "3aa8edd3bc538f1dcb0cdf1ca76be357da1b0dddc7e6bc28ccda3d8c0da7dbad"
+  },
+  "generated_utc": "2026-09-30T18:27:30Z"
+}

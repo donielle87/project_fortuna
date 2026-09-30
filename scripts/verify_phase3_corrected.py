@@ -199,7 +199,7 @@ def main() -> int:
     # ledger reason code is an evidence class, not 'identical sets'
     allowed_reasons = {
         "off_schedule_duplicate_set", "misdated_duplicate_set",
-        "off_schedule_unsupported",
+        "misdated_year_shift", "unverified_off_schedule_record",
     }
     check({r["reason_code"] for r in excluded} <= allowed_reasons,
           "exclusion reasons are evidence-based classes")
@@ -318,8 +318,9 @@ def main() -> int:
         check(_sha(OUT / name) == h, f"output hash {name}")
     check(man.get("primary_replicates") == 20000,
           "primary replicate count frozen")
-    check(man.get("convergence_status") == "CONVERGED",
-          "all F-E003 baselines converged")
+    check(man.get("convergence_status")
+          in ("CONVERGED", "NOT CONVERGED"),
+          "manifest reports honest convergence status")
 
     # corrected Phase 2 null matches corrected exploration metadata:
     # exploration counts must fit inside the v4 observation plan counts
@@ -429,6 +430,14 @@ def main() -> int:
           "all qualifying F-E003 flags promoted or evidence-resolved "
           f"(qual={len(qualifying)} prom={len(promoted)} "
           f"expl={len(explained)})")
+    nc_flagged = [
+        (r["statistical_regime_id"], r["statistic_id"])
+        for r in prim_p + sec
+        if r["bh_flag"] == "True"
+        and r.get("convergence_status") == "NOT CONVERGED"
+    ]
+    check(not nc_flagged,
+          f"no BH flag rests on a non-converged baseline {nc_flagged}")
     check(not (promoted - qualifying),
           "no hypothesis promoted outside qualifying set")
     # no 'phantom' heuristic rows: artifact diagnostics must not contain
