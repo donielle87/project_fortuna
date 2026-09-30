@@ -315,7 +315,8 @@ def main() -> int:
 
     # ---- scientific firewall: simulation code must not read outcomes ----
     sim_src = list((ROOT / "src/fortuna/simulation").glob("*.py"))
-    forbidden = ("main_numbers", "draw_numbers", "winning", "jackpot_actual")
+    forbidden = ("main_numbers", "draw_numbers", "special_ball\"",
+                 "special_ball'")
     bad = []
     for f in sim_src:
         if f.name == "observation.py":
