@@ -1,0 +1,141 @@
+# F-E004 — Phase 3B: Physical Draw-Sequence and Positional Dependence
+# Exploration (FROZEN before any positional outcome statistic is
+# computed). Classification: EXPLORATORY. Generates candidate
+# hypotheses only. Nothing in this experiment is confirmatory or
+# predictive. The frozen Phase 3 holdout remains untouched.
+#
+# Scientific question: does the ACTUAL PHYSICAL EXTRACTION SEQUENCE of
+# corrected exploration draws contain dependence or position-specific
+# structure beyond the fair sequential without-replacement null? A fair
+# K-of-N draw is one sequential mechanism (X1 uniform over N, X2 uniform
+# over the remaining N-1, ...): positions have uniform marginals but are
+# dependent within a draw. Every P3B statistic is therefore calibrated
+# against uniform ORDERED K-permutations — never an
+# independent-position null.
+experiment_id: F-E004
+phase: 3B
+title: Physical Draw-Sequence and Positional Dependence Exploration
+classification: exploratory
+follows: F-E003 (corrected exploratory baseline, zero surviving flags)
+
+accepted_phase1_dataset_sha256: >-
+  200174427b4abcc6bcc0aa3761174db237ae52e266e88cfc88bae39f27c138ff
+accepted_phase2_plan_sha256: >-
+  8309e1dd673e339b66b1fae09d02a0f2b205a62ada2882c1590645d1bf2ac10a
+accepted_phase2_config: F-E001.v4.yaml
+accepted_phase3_exploration_ids: metadata/phase3_exploration_ids_v2.csv
+
+rng:
+  algorithm: PCG64DXSM
+  root_seed: 20260930
+  child_derivation: sha256-scope-v1
+  # Ordered fair histories:
+  #   "<game>|<statistical_regime>|P3B_HISTORIES|batch<1..4>"
+  # Equipment permutation:  "<game>|<stat_regime>|P3B_EQUIP|<field>"
+  # Sensitivity: "<game>|<stat_regime>|P3B_SENS|<scenario>|<effect>"
+
+# ---------- eligibility (Task 2: provenance-safe physical order) ------
+eligibility:
+  draw_stream: main
+  analysis_eligible: true
+  exploration_population: phase3_exploration_ids_v2.csv   # F-E003 v2
+  numbers_order: physical_draw_order    # ONLY; sorted/unknown excluded
+  atomic_provenance: number_sequence_source_id_required
+  min_physical_order_draws: 100         # per statistical regime (Task 3)
+  holdout_access: false                 # loader firewall; IDs only
+
+# ---------- contiguous physical-order segments (Task 11) --------------
+# A segment breaks on: missing scheduled draw, ineligible/excluded draw,
+# non-physical-order row (sorted OR unknown), regime change, exploration
+# boundary. Stricter than ordinary sequence segmentation.
+segments:
+  rule: contiguous_physical_order_only
+  breaks_on: [missing_draw, ineligible_draw, excluded_draw,
+              non_physical_order_row, regime_change, exploration_end]
+
+# ---------- Monte Carlo (exploration-matched, ordered draws) ----------
+monte_carlo:
+  replicates_per_statistic_regime: 20000   # shared ordered histories
+  batches: 4
+  replicates_per_batch: 5000
+  equipment_permutations: 10000
+
+convergence:
+  version: 2
+  sigma_factor: 4.0
+  atol_rel: 0.000001
+  honest_not_converged: true       # NOT CONVERGED can never promote
+
+# ---------- frozen P3B statistic catalog (Task 5) ---------------------
+statistics:
+  lags_same_position: [1, 2, 3, 4, 5]     # P3B-S007
+  lags_cross_position: [1, 2, 3]          # P3B-S008 (frozen now)
+  rolling_windows: [100, 250]             # P3B-S009 physical-order draws
+  catalog:
+    P3B-S001: {tail: upper}   # Pearson dispersion over K x N matrix
+    P3B-S002: {tail: upper}   # max |z| over position x ball cells
+    P3B-S003: {tail: upper}   # max CvM label-shape discrepancy / position
+    P3B-S004: {tail: upper}   # omnibus adjacent transition vs fair WOR
+    P3B-S005: {tail: upper}   # max ordered-pair residual (all j!=k,a!=b)
+    P3B-S006: {tail: upper}   # max adjacent empirical MI (bits)
+    P3B-S007: {tail: upper}   # max |z| same-position serial hits
+    P3B-S008: {tail: upper}   # max |z| cross-position serial hits
+    P3B-S009: {tail: upper}   # max |z| rolling positional scan
+    P3B-S010: {tail: upper}   # equipment x position chi2 (permutation)
+
+# ---------- equipment sufficiency (P3B-S010, Task 5) ------------------
+equipment:
+  fields: [machine_id, ball_set_id]
+  min_categories: 3
+  min_draws_per_category: 20
+  min_total_draws: 200
+  time_block: calendar_year       # blocked permutation confounding control
+
+# ---------- multiplicity (Task 6/7): F-E004 is its OWN family ---------
+primary:
+  family_statistics: [P3B-S001, P3B-S002, P3B-S003, P3B-S004,
+                      P3B-S006, P3B-S007, P3B-S008]
+  family_bh_q: 0.10
+  family_holm_alpha: 0.05
+secondary:
+  family_statistics: [P3B-S005, P3B-S009, P3B-S010]
+  family_bh_q: 0.10
+  family_holm_alpha: 0.05
+pvalue_correction: "(b+1)/(B+1)"
+
+# ---------- promotion rule (Task 8) ------------------------------------
+promotion:
+  bh_q_max: 0.10
+  min_abs_z: 2.5            # |obs - null_mean| / null_sd
+  not_converged_blocks: true
+
+# ---------- sensitivity / power study (Task 16) ------------------------
+sensitivity:
+  enabled: true
+  replicates: 250             # biased histories per (regime,scenario,effect)
+  critical_alpha: 0.05        # rejection threshold = null 95th percentile
+  power_target: 0.80
+  scenarios:
+    position1_bias:    [0.5, 1.0, 2.0, 4.0]    # delta: prob shift on pos 1
+    conditional_bias:  [0.05, 0.15, 0.30, 0.60] # q: X2=succ(X1) in-draw
+    serial_same_pos:   [0.05, 0.10, 0.20, 0.40] # q: X1,t+1 = X1,t
+    serial_cross_pos:  [0.05, 0.10, 0.20, 0.40] # q: X1,t+1 = XK,t
+    temporal_position: [1.0, 2.0, 4.0, 8.0]    # delta in one window
+
+# ---------- stopping rule (Task 17) ------------------------------------
+stopping_rule:
+  if_no_promotion: stop_positional_mechanics_exploration
+  no_post_hoc_statistics: true
+  holdout_remains_sealed: true
+
+# ---------- outputs ----------------------------------------------------
+outputs_dir: data/analysis/phase3b
+
+prohibited:
+  - predictive_models
+  - number_rankings
+  - candidate_pools
+  - ticket_generation
+  - holdout_outcome_analysis
+  - independent_position_null
+  - sorted_or_unknown_order_substitution
