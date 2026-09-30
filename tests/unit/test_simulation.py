@@ -415,7 +415,7 @@ def test_runs_never_bridge_segments():
 def test_run_stats_against_brute_force():
     rng = np.random.default_rng(42)
     n_pool, k = 20, 4
-    for trial in range(30):
+    for trial in range(200):
         segs = rng.integers(1, 8, size=rng.integers(1, 4)).tolist()
         n = sum(segs)
         mains = np.sort(

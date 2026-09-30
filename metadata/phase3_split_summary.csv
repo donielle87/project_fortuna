@@ -1,0 +1,17 @@
+statistical_regime_id,game_id,eligible_main_draw_count,exploration_count,holdout_count,exploration_end_date,holdout_start_date,exploration_segments,exploration_segment_lengths,order_eligible_exploration_count,order_eligible_segment_lengths
+FL-S01,florida_lotto,599,479,120,1997-07-05,1997-07-12,1,479,479,479
+FL-S02,florida_lotto,2810,2248,562,2021-05-08,2021-05-12,1,2248,550,550
+MM-S01,mega_millions,171,136,35,1998-09-11,1998-09-15,5,12;61;1;35;27,0,
+MM-S02,mega_millions,342,273,69,2001-09-07,2001-09-11,5,122;78;10;39;24,0,
+MM-S03,mega_millions,320,256,64,2004-11-02,2004-11-05,4,88;129;8;31,94,55;8;31
+MM-S04,mega_millions,869,695,174,2012-02-17,2012-02-21,1,695,694,652;42
+MM-S05,mega_millions,426,340,86,2016-12-30,2017-01-03,1,340,334,25;48;47;161;14;26;13
+MM-S06,mega_millions,777,621,156,2023-10-06,2023-10-10,1,621,619,20;101;498
+MM-S07,mega_millions,155,124,31,2026-06-12,2026-06-16,1,124,124,124
+PB-S01,powerball,578,462,116,1996-09-21,1996-09-25,1,462,462,462
+PB-S02,powerball,514,411,103,2001-10-10,2001-10-13,1,411,411,411
+PB-S03,powerball,302,241,61,2005-01-26,2005-01-29,1,241,241,241
+PB-S04,powerball,350,280,70,2008-05-03,2008-05-07,1,280,280,280
+PB-S05,powerball,316,252,64,2011-06-04,2011-06-08,1,252,251,176;75
+PB-S06,powerball,389,311,78,2015-01-03,2015-01-07,1,311,310,232;78
+PB-S07,powerball,1414,1131,283,2024-12-07,2024-12-09,1,1131,1130,173;957

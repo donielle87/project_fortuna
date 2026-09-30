@@ -1,0 +1,176 @@
+# F-E002 — Phase 3 Historical Deviation Exploration (FROZEN before any
+# historical winning-number outcome analysis).
+# Classification: EXPLORATORY. Generates candidate hypotheses only.
+# Nothing in this experiment is confirmatory or predictive.
+experiment_id: F-E002
+phase: 3
+title: Phase 3 Historical Deviation Exploration
+classification: exploratory
+
+accepted_phase1_dataset_sha256: >-
+  953c0701aeef6782a361146999ca43c1d4d2863d807c8e4dbe39cfa4108f3891
+accepted_phase2_commit: 0497462993759e7bcbe236f47f7df5d7c27baa8d
+observation_plan_sha256: >-
+  67a24385237c0184fe252e94808141c29325b2b6fb086f0a57976242e8e6ddd6
+
+rng:
+  algorithm: PCG64DXSM          # numpy.random.Generator(PCG64DXSM)
+  root_seed: 20260930
+  child_derivation: sha256-scope-v1
+  # FROZEN shared-history scope (deliberate from the start for F-E002):
+  #   "<game>|<statistical_regime>|HISTORIES|batch<1..4>"
+  # All primary and history-level secondary statistics are computed from
+  # the same fair replicate histories (preserves joint null dependence;
+  # every statistic still receives the full replicate count).
+  # Dedicated scopes: ORDER (P3-S011 null), EQUIP|<field> (P3-S012
+  # permutation), STRUCTREF|<statistic> (structural reference pmfs).
+
+eligibility:
+  draw_stream: main
+  analysis_eligible: true
+
+# ---------- chronological holdout split (METADATA ONLY) ----------
+split:
+  policy: chronological_last
+  holdout_fraction: 0.20
+  holdout_count_rule: ceil       # holdout = ceil(0.20 * n_eligible) per regime
+  per_statistical_regime: true   # split independently inside each regime
+  randomize: false               # never randomized, never outcome-optimized
+  outcome_inspection: false      # built from metadata columns only
+
+# ---------- Monte Carlo (exploration-matched) ----------
+monte_carlo:
+  replicates_per_statistic_regime: 20000   # primary + history secondary
+  batches: 4
+  replicates_per_batch: 5000
+  streaming: true
+  # P3-S011 (physical order): same 20,000 / 4x5,000, matched to the
+  # exploration physical-order draw count of each regime (ORDER scope).
+  # P3-S012 (equipment): time-blocked permutation, predeclared count.
+  equipment_permutations: 10000
+  equipment_permutation_batches: 4
+  # Structural reference pmfs for P3-S005..S010 where no exact pmf exists:
+  structural_reference_draws: 200000
+
+# ---------- convergence (same accepted v2 diagnostic as F-E001) ----------
+convergence:
+  version: 2
+  sigma_factor: 4.0
+  atol_rel: 0.000001
+
+# ---------- PRIMARY family: frozen F-S001..S013 on exploration ----------
+primary:
+  statistics_catalog_version: "1.0"
+  expected_test_count: 202
+  tails:
+    F-S001: upper
+    F-S002: upper
+    F-S003: upper
+    F-S004: lower
+    F-S005: upper
+    F-S006: two-sided
+    F-S007: upper
+    F-S008: upper
+    F-S009: upper
+    F-S010: upper
+    F-S011: two-sided
+    F-S012: two-sided
+    F-S013: two-sided
+  pvalue_correction: "(b+1)/(B+1)"
+  family_bh_q: 0.10        # exploratory FDR flag threshold
+  family_holm_alpha: 0.05  # reported FWER-adjusted level
+
+# ---------- SECONDARY family (Phase-3-declared statistics) ----------
+secondary:
+  # P3-S001 max triple co-occurrence (upper)
+  triple:
+    statistic_id: P3-S001
+    tail: upper
+  # P3-S002 max |z| of lagged overlap aggregates, lags 1..5 (upper).
+  #   For lag L: S_L = sum of |D_t cap D_{t+L}| over within-segment pairs;
+  #   n_L = number of such pairs; z_L = (S_L - n_L*mu) / sqrt(n_L*var),
+  #   mu,var from the exact consecutive-draw overlap pmf (independence
+  #   approximation; the statistic itself is calibrated under MC).
+  lagged_overlap:
+    statistic_id: P3-S002
+    lags: [1, 2, 3, 4, 5]
+    tail: upper
+  # P3-S003 terminal drought: max over balls of the trailing absence run
+  # at the end of the final exploration segment (upper). Recency
+  # diagnostic only — a long absence does NOT imply a number is "due".
+  terminal_drought:
+    statistic_id: P3-S003
+    tail: upper
+  # P3-S004 rolling-window scan: max |z| over windows in {50,100,250},
+  # all within-segment window positions, all main labels;
+  #   z = (c - w*p) / sqrt(w*p*(1-p)), p = K/N (upper).
+  rolling_scan:
+    statistic_id: P3-S004
+    windows: [50, 100, 250]
+    tail: upper
+  # P3-S005..S010 distributional discrepancy. FROZEN statistic: discrete
+  # Cramer-von Mises distance between the empirical CDF F_emp of the
+  # per-draw quantity and the reference null pmf p0:
+  #   T = sum_x p0(x) * (F_emp(x) - F0(x))^2
+  # summed over the reference support x (exact pmf where tractable;
+  # deterministic simulated reference pmf otherwise). Tail: upper each.
+  structural:
+    discrepancy: cvm_ref_weighted
+    tests:
+      P3-S005: draw_sum            # exact pmf
+      P3-S006: range               # exact pmf
+      P3-S007: adjacent_pair_count # simulated reference pmf
+      P3-S008: min_spacing         # simulated reference pmf
+      P3-S009: max_spacing         # simulated reference pmf
+      P3-S010: odd_count           # exact pmf
+    tail: upper
+  # P3-S011 physical-position frequency omnibus (upper):
+  #   positions j=1..K on physical_draw_order records only;
+  #   z_{j,l} = (c_{j,l} - n_ord/N) / sqrt(n_ord*(1/N)*(1-1/N));
+  #   P3-S011 = max_{j,l} |z_{j,l}|, calibrated under the ordered-draw
+  #   null (without-replacement dependence preserved). N/A when the
+  #   regime has fewer than `min_order_draws` physical-order exploration
+  #   draws. Sorted/unknown order is never substituted.
+  physical_order:
+    statistic_id: P3-S011
+    min_order_draws: 100
+    tail: upper
+  # P3-S012 equipment association (upper), evaluated separately for
+  # machine_id and ball_set_id on the populated exploration subset:
+  #   chi-square of the category x main-ball-label contingency table
+  #   T = sum_cat sum_l (c - n_cat*K/N)^2 / (n_cat*K/N)
+  #   calibrated by calendar-year-blocked permutation of equipment labels.
+  #   Sufficient iff >=3 categories each with >=20 populated exploration
+  #   draws AND >=200 populated draws total; otherwise N/A.
+  equipment:
+    statistic_id: P3-S012
+    fields: [machine_id, ball_set_id]
+    min_categories: 3
+    min_draws_per_category: 20
+    min_total_draws: 200
+    time_block: calendar_year
+    tail: upper
+  family_bh_q: 0.10
+  family_holm_alpha: 0.05
+
+# ---------- promotion rule (candidate hypothesis requires BOTH) ----------
+promotion:
+  bh_q_max: 0.10
+  abs_z_min: 2.5            # |obs - null_mean| / null_sd, null_sd > 0
+
+# ---------- anomaly flagging ----------
+anomaly_flags:
+  raw_p: 0.05               # descriptive raw-anomaly count
+  bh_q: 0.10                # exploratory flag
+  holm: 0.05                # reported FWER flag
+
+# ---------- outputs ----------
+outputs_dir: data/analysis/phase3
+
+prohibited:
+  - predictive_models
+  - number_rankings
+  - candidate_pools
+  - ticket_generation
+  - holdout_outcome_analysis
+  - pooling_incompatible_regimes
