@@ -2,19 +2,22 @@
   "phase": 2,
   "experiment_id": "F-E001",
   "phase2_preregistration_commit": "2b4381a5945313ef99f00c8f8df2faeec933fce9",
-  "simulation_code_commit": "211f938db4a4ddc7440183dca15ff7768039f49c",
-  "config_file": "F-E001.v3.yaml",
-  "config_supersedes": "F-E001.v2.yaml (rng scope documentation, D-004)",
+  "simulation_code_commit": "ccd383f50e18493989fc8b50372a3dc182f3c65a",
+  "config_file": "F-E001.v4.yaml",
+  "config_supersedes": "F-E001.v3.yaml (input refresh, D-007/D-008)",
   "amendments": [
     "F-E001-amendment-01-convergence-se.md (D-003)",
-    "F-E001-amendment-02-shared-history-stream.md (D-004)"
+    "F-E001-amendment-02-shared-history-stream.md (D-004)",
+    "F-E001-amendment-03-phase1-correction.md (D-007/D-008)"
   ],
   "decisions": [
     "D-003",
     "D-004",
-    "D-005"
+    "D-005",
+    "D-007",
+    "D-008"
   ],
-  "accepted_phase1_dataset_sha256": "953c0701aeef6782a361146999ca43c1d4d2863d807c8e4dbe39cfa4108f3891",
+  "accepted_phase1_dataset_sha256": "200174427b4abcc6bcc0aa3761174db237ae52e266e88cfc88bae39f27c138ff",
   "root_seed": 20260930,
   "rng_algorithm": "PCG64DXSM",
   "child_derivation": "sha256-scope-v1",
@@ -41,7 +44,7 @@
     "PB-S06",
     "PB-S07"
   ],
-  "observation_plan_sha256": "67a24385237c0184fe252e94808141c29325b2b6fb086f0a57976242e8e6ddd6",
+  "observation_plan_sha256": "8309e1dd673e339b66b1fae09d02a0f2b205a62ada2882c1590645d1bf2ac10a",
   "determinism_probe_sha256": {
     "FL-S01": "ae6faf3f3d1e0c49708a9f1ec673765aacd348aa2896d5d6151a62e6d7b156cc",
     "FL-S02": "2376524aa8a9da0badc33878f0b0632424a67e9b7794d8c87c939af3ecbede74",
@@ -60,17 +63,17 @@
     "PB-S06": "68ea0e4b3bf8ac9cd02134babb28d1f4d23817ce94f254c1cc75335b8ad787c8",
     "PB-S07": "5631803f221a6ff6ea613da8f0d9ac8ffb0a99a9335454ce7db6dd50aca8a39d"
   },
-  "config_sha256": "ef5e0fa8dd6de30e02024db940717ec5475b6329f07eea54ea70ad87a100dbd2",
+  "config_sha256": "ba0efc8e6f96baa4aff2426f23f9b2102d1d94879540fbab74b4b658377ab3ed",
   "preregistration_sha256": "8701c7758bbf53ea225611235a9e5aeaaabe0e7c5f3de0d9028557c49a1971d4",
   "output_hashes": {
-    "batch_convergence.csv": "8c076bb820d432da7473f917f468dd4ffd18d1cb7c83320640b758c5de384579",
+    "batch_convergence.csv": "c2594caccf9c7f00366677ea85de995aba437e35563f83613f9c8dfc8903ee8d",
     "exact_baselines.csv": "40ae529fe115d15c8749f0b0140f3bcbd306fba5c420a0f3d93beb5b633e20a4",
-    "history_baseline_quantiles.csv": "143927811cfaced7cf4e45988daec1901b81ddffbd85f6b8ba874f0a6f5a4585",
-    "history_baseline_summary.csv": "3475975c92a287a80abc6be270bc751375509f431ba4397513d7d5779d64117f",
+    "history_baseline_quantiles.csv": "b8daef21f36ff69eb4e54b777f1276f93889ea487a1e48f7d11d32bdb2ea55ff",
+    "history_baseline_summary.csv": "e9af7e7d1be5fe565279fead0ae04a30f39bbcc15227b40ae10c65317a45ff9b",
     "structural_distributions.csv": "70e75c56920c71b89261fd67981fe2ab965c70b8cf32d143cb0becbc044f0df1",
     "theory_validation.csv": "d77302cf168365f56c49336ffcc8365ccc83f993c35b8d46104766561c880f9c"
   },
-  "generated_utc": "2026-09-30T16:15:33Z",
+  "generated_utc": "2026-09-30T18:11:42Z",
   "validation_status": "PASS",
   "convergence_status": "CONVERGED"
 }
